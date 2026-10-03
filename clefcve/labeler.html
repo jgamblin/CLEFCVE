@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CVE Labeler</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1b1f24; --muted: #5b6573; --line: #dde1e6;
+    --accent: #2f6fde; --accent-soft: #e6eefc; --good: #1f8a4c; --good-soft: #e3f4ea;
+    --bad: #c2412d; --bad-soft: #fbe8e4; --warn: #9a6700; --warn-soft: #fff4d6; --chip: #eef0f3;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --panel: #1a1e24; --text: #e6e9ed; --muted: #9aa4b1; --line: #2c323b;
+      --accent: #6c9cf0; --accent-soft: #1f2d45; --good: #4cc27f; --good-soft: #15301f;
+      --bad: #f0785f; --bad-soft: #3a1d17; --warn: #e0b240; --warn-soft: #33290f; --chip: #252b33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--panel); border-bottom: 1px solid var(--line);
+           padding: 10px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 650; }
+  .progress { color: var(--muted); font-size: 13px; }
+  .nav { display: flex; gap: 6px; margin-left: auto; }
+  button { font: inherit; font-size: 13px; color: var(--text); background: var(--chip); border: 1px solid var(--line);
+           border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  .dots { display: flex; flex-wrap: wrap; gap: 3px; padding: 8px 16px; background: var(--panel);
+          border-bottom: 1px solid var(--line); }
+  .dot { width: 11px; height: 11px; border-radius: 3px; background: var(--chip); border: 1px solid var(--line);
+         cursor: pointer; padding: 0; }
+  .dot.done { background: var(--good); border-color: var(--good); }
+  .dot.current { outline: 2px solid var(--accent); outline-offset: 1px; }
+  main { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; padding: 16px;
+         max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .card + .card { margin-top: 16px; }
+  .cveid { font: 600 18px var(--mono); }
+  .meta { color: var(--muted); font-size: 13px; margin: 2px 0 10px; }
+  .title { font-weight: 600; margin: 6px 0; }
+  .desc { white-space: pre-wrap; font-size: 15.5px; line-height: 1.6; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+  h2:first-child { margin-top: 0; }
+  ul.plain { margin: 0; padding-left: 18px; font-size: 13.5px; }
+  ul.plain a { color: var(--accent); word-break: break-all; }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  .q { padding: 12px 0; border-top: 1px solid var(--line); }
+  .q:first-of-type { border-top: 0; padding-top: 0; }
+  .q label.qtitle { display: block; font-weight: 600; margin-bottom: 2px; }
+  .q .hint { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opt { border-radius: 999px; padding: 4px 12px; }
+  .opt.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .opt kbd { font: 11px var(--mono); opacity: .7; margin-left: 4px; }
+  .metric { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 8px; margin: 4px 0; }
+  .metric b { font: 600 13px var(--mono); }
+  .vector { font: 13px var(--mono); margin-top: 8px; padding: 6px 8px; background: var(--chip); border-radius: 6px;
+            word-break: break-all; }
+  input[type=text], textarea { width: 100%; font: inherit; font-size: 14px; color: var(--text);
+            background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  textarea { min-height: 60px; resize: vertical; }
+  .cwe { background: var(--chip); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 13.5px; }
+  .cwe .def { color: var(--muted); margin-top: 4px; }
+  .tag { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 999px; background: var(--chip);
+         border: 1px solid var(--line); color: var(--muted); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .tag.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+  .tag.good { background: var(--good-soft); color: var(--good); border-color: transparent; }
+  .status { font-size: 12.5px; color: var(--muted); }
+  .locked { color: var(--muted); font-size: 13.5px; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.cmp th, table.cmp td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.cmp th { color: var(--muted); font-weight: 600; }
+  .match { color: var(--good); font-weight: 700; }
+  .miss { color: var(--bad); font-weight: 700; }
+  .keys { color: var(--muted); font-size: 12px; padding: 0 16px 16px; max-width: 1500px; margin: 0 auto; }
+  .keys kbd { font: 11px var(--mono); background: var(--chip); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CVE gold-set labeler</h1>
+  <span class="progress" id="progress"></span>
+  <span class="status" id="saveStatus"></span>
+  <div class="nav">
+    <button id="prev" title="Previous (←)">← Prev</button>
+    <button id="nextUnlabeled" title="Next unlabeled (])">Next unlabeled</button>
+    <button id="next" title="Next (→)">Next →</button>
+  </div>
+</header>
+<div class="dots" id="dots"></div>
+<main>
+  <section>
+    <div class="card" id="record"></div>
+    <div class="card" id="reveal"></div>
+  </section>
+  <section class="card" id="form"></section>
+</main>
+<div class="keys">
+  Keys: <kbd>y</kbd>/<kbd>n</kbd> security impact stated · <kbd>0</kbd>–<kbd>4</kbd> clarity ·
+  <kbd>←</kbd>/<kbd>→</kbd> prev/next · <kbd>]</kbd> next unlabeled. Every change saves automatically.
+</div>
+<script>
+const CLARITY = ["Unusable", "Poor", "Adequate", "Good", "Excellent"];
+const IMPACT_BASIS = {
+  stated_explicitly: "Stated explicitly", implied_by_weakness: "Implied by vuln class",
+  bug_fix_only: "Bug/fix only", not_security_relevant: "Not security relevant",
+  insufficient_information: "Insufficient info" };
+const CWE_FIT = {
+  exact: "Exact", too_general: "Too general", too_specific: "Too specific",
+  impact_not_cause: "Impact, not cause", related_but_wrong: "Related but wrong", wrong: "Wrong" };
+const CVSS31 = { AV: ["N", "A", "L", "P"], AC: ["L", "H"], PR: ["N", "L", "H"], UI: ["N", "R"],
+                 S: ["U", "C"], C: ["N", "L", "H"], I: ["N", "L", "H"], A: ["N", "L", "H"] };
+
+let items = [], idx = 0, cur = null, label = {}, saveTimer = null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const isDone = (l) => l && l.security_impact != null && l.desc_clarity != null;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(`${r.status} ${path}`);
+  return r.json();
+}
+
+async function init() {
+  items = await api("/api/items");
+  const fromHash = items.findIndex((i) => i.cve_id === location.hash.slice(1));
+  idx = fromHash >= 0 ? fromHash : Math.max(0, items.findIndex((i) => !i.labeled));
+  await load();
+}
+
+function renderProgress() {
+  const n = items.filter((i) => i.labeled).length;
+  $("progress").textContent = `${idx + 1} / ${items.length} · ${n} labeled`;
+  $("dots").innerHTML = items.map((it, i) =>
+    `<button class="dot ${it.labeled ? "done" : ""} ${i === idx ? "current" : ""}" data-i="${i}" title="${esc(it.cve_id)}"></button>`).join("");
+  $("prev").disabled = idx === 0;
+  $("next").disabled = idx === items.length - 1;
+}
+
+async function load() {
+  cur = await api(`/api/item/${items[idx].cve_id}`);
+  label = cur.label ? { ...cur.label } : {};
+  history.replaceState(null, "", `#${cur.cve_id}`);
+  $("saveStatus").textContent = "";
+  renderProgress(); renderRecord(); renderForm(); renderReveal();
+  window.scrollTo(0, 0);
+}
+
+function renderRecord() {
+  const aff = cur.affected.map((a) => {
+    const vs = (a.versions || []).map((v) => [v.status, v.version, v.lessThan && `< ${v.lessThan}`,
+               v.lessThanOrEqual && `≤ ${v.lessThanOrEqual}`].filter(Boolean).join(" ")).join("; ");
+    return `<li><b>${esc(a.vendor)}</b> ${esc(a.product)}${vs ? ` <span class="mono">(${esc(vs)})</span>` : ""}</li>`;
+  }).join("");
+  $("record").innerHTML = `
+    <div class="cveid">${esc(cur.cve_id)}</div>
+    <div class="meta">${esc(cur.assigner)} · published ${esc(cur.published)}</div>
+    ${cur.title ? `<div class="title">${esc(cur.title)}</div>` : ""}
+    <div class="desc">${esc(cur.description)}</div>
+    <h2>Affected</h2><ul class="plain">${aff || "<li>none listed</li>"}</ul>
+    <h2>References</h2><ul class="plain">${cur.references.map((u) =>
+      `<li><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a></li>`).join("") || "<li>none</li>"}</ul>`;
+}
+
+function opts(field, choices, keyHints = {}) {
+  return `<div class="opts">${Object.entries(choices).map(([v, text]) =>
+    `<button class="opt ${String(label[field]) === String(v) ? "sel" : ""}" data-field="${field}" data-value="${esc(v)}">${esc(text)}${keyHints[v] ? `<kbd>${keyHints[v]}</kbd>` : ""}</button>`).join("")}</div>`;
+}
+
+function renderForm() {
+  const cwes = cur.cwes.filter((c) => c.cwe_id);
+  const cweFit = label.cwe_fit || {};
+  const cweBlock = cwes.length ? cwes.map((c) => `
+      <div class="cwe"><b class="mono">${esc(c.cwe_id)}</b> ${esc(c.name || c.text)}
+        ${c.usage && c.usage !== "Allowed" ? `<span class="tag ${c.usage === "Prohibited" ? "bad" : "warn"}">${esc(c.usage)}</span>` : ""}
+        <div class="def">${esc(c.definition || "")}</div></div>
+      <div class="opts">${Object.entries(CWE_FIT).map(([v, t]) =>
+        `<button class="opt ${cweFit[c.cwe_id] === v ? "sel" : ""}" data-cwe="${esc(c.cwe_id)}" data-value="${v}">${t}</button>`).join("")}</div>`).join("")
+    : `<div class="locked">No structured CWE assigned${cur.cwes.length ? ` (text only: “${esc(cur.cwes.map((c) => c.text).join("; "))}”)` : ""}.</div>`;
+
+  const cv = label.cvss31 || {};
+  const cna31 = cur.cvss.find((c) => c.version === "3.1" || c.version === "3.0");
+  const vector = Object.keys(CVSS31).every((m) => cv[m]) ? "CVSS:3.1/" + Object.keys(CVSS31).map((m) => `${m}:${cv[m]}`).join("/") : "";
+  $("form").innerHTML = `
+    <div class="q"><label class="qtitle">Q1 · Does the description establish a security impact?</label>
+      <div class="hint">Judge only the text: does it say or clearly imply what an attacker could achieve?</div>
+      ${opts("security_impact", { y: "Yes", n: "No" }, { y: "y", n: "n" })}
+      <div class="hint" style="margin-top:8px">How (optional):</div>${opts("impact_basis", IMPACT_BASIS)}</div>
+    <div class="q"><label class="qtitle">Your judgment · Is this a real vulnerability?</label>
+      <div class="hint">Using everything you know, including references. Optional.</div>
+      ${opts("is_vuln", { y: "Yes", n: "No", unsure: "Unsure" })}</div>
+    <div class="q"><label class="qtitle">Q2 · Description clarity for a defender</label>
+      <div class="hint">0 Unusable · 1 Poor (vague) · 2 Adequate (gaps: versions/attacker/impact) · 3 Good · 4 Excellent</div>
+      ${opts("desc_clarity", Object.fromEntries(CLARITY.map((t, i) => [i, `${i} ${t}`])), Object.fromEntries(CLARITY.map((_, i) => [i, i])))}</div>
+    <div class="q"><label class="qtitle">Q3 · Does the assigned CWE fit the root cause?</label>
+      ${cweBlock}
+      <div class="hint" style="margin-top:8px">Better CWE (optional):</div>
+      <input type="text" id="better_cwe" placeholder="e.g. CWE-787" value="${esc(label.better_cwe || "")}"></div>
+    <div class="q"><label class="qtitle">Q4 · Your CVSS v3.1 base metrics</label>
+      <div class="hint">Scored blind by default. Leave blank if the record doesn't give enough to judge.
+        ${cna31 ? (label.cvss_saw_cna ? ` CNA: <span class="mono">${esc(cna31.vector)}</span>`
+                   : ` <button id="showCna">Show CNA vector</button>`) : " (No CNA v3.x vector.)"}</div>
+      ${Object.entries(CVSS31).map(([m, vals]) => `<div class="metric"><b>${m}</b><div class="opts">${vals.map((v) =>
+        `<button class="opt ${cv[m] === v ? "sel" : ""}" data-metric="${m}" data-value="${v}">${v}</button>`).join("")}</div></div>`).join("")}
+      ${vector ? `<div class="vector">${vector}</div>` : ""}
+      ${Object.keys(cv).length ? `<button id="clearCvss" style="margin-top:8px">Clear CVSS</button>` : ""}</div>
+    <div class="q"><label class="qtitle">Notes</label><textarea id="notes">${esc(label.notes || "")}</textarea></div>
+    <div class="q"><button id="clearAll">Clear all labels for this CVE</button></div>`;
+}
+
+async function renderReveal() {
+  if (!isDone(label)) {
+    $("reveal").innerHTML = `<h2>After you label</h2><div class="locked">Record state, lint flags, and Clef's answers appear
+      here once Q1 and clarity are set, so they don't bias your labels.</div>`;
+    return;
+  }
+  const clef = await api(`/api/clef/${cur.cve_id}`);
+  const models = ["clef", "clef-flash"].filter((m) => clef[m]);
+  const fmt = (a) => !a ? "–" : a.choice ?? (a.p_true != null ? `${a.p_true >= .5 ? "yes" : "no"} (${a.p_true.toFixed(2)})`
+                                  : a.score != null ? a.score.toFixed(1) : "–");
+  const yours = { security_impact_stated: label.security_impact === "y" ? "yes" : label.security_impact === "n" ? "no" : null,
+                  impact_basis: label.impact_basis, desc_clarity: label.desc_clarity };
+  for (const m of Object.keys(CVSS31)) yours[`cvss31_${m}`] = label.cvss31?.[m];
+  for (const [c, f] of Object.entries(label.cwe_fit || {})) yours[`cwe_fit:${c}`] = f;
+  const rows = Object.keys({ ...yours, ...Object.assign({}, ...models.map((m) => clef[m])) })
+    .filter((k) => !k.startsWith("cwe_fit") || k.includes(":"))
+    .map((k) => {
+      const y = yours[k];
+      const cells = models.map((m) => {
+        const a = clef[m][k]; const v = fmt(a);
+        let cls = "";
+        if (y != null && a) {
+          const same = k === "desc_clarity" ? Math.abs(a.score - y) < 0.75
+                     : k === "security_impact_stated" ? (a.p_true >= .5) === (y === "yes") : a.choice === y;
+          cls = same ? "match" : "miss";
+        }
+        return `<td class="${cls}">${esc(v)}</td>`;
+      }).join("");
+      return `<tr><td class="mono">${esc(k)}</td><td>${esc(y ?? "–")}</td>${cells}</tr>`;
+    }).join("");
+  const flags = cur.lint_flags.map((f) => `<li><span class="tag ${f.status === "fail" ? "bad" : "warn"}">${esc(f.level)}</span>
+    <span class="mono">${esc(f.check)}</span> (${esc(f.rule)}) ${esc(f.detail)}</li>`).join("");
+  $("reveal").innerHTML = `
+    <h2>Record state</h2>
+    <div>${cur.state === "REJECTED" ? `<span class="tag bad">REJECTED</span> ${esc(cur.rejected_reason)}`
+                                    : `<span class="tag good">PUBLISHED</span>`}</div>
+    <h2>Lint flags</h2><ul class="plain">${flags || "<li>none</li>"}</ul>
+    <h2>Clef vs you</h2>
+    ${models.length ? `<table class="cmp"><tr><th>question</th><th>you</th>${models.map((m) => `<th>${m}</th>`).join("")}</tr>${rows}</table>`
+                    : `<div class="locked">No Clef answers for this CVE yet (run <span class="mono">scripts/run_gold.sh</span>).</div>`}`;
+}
+
+function scheduleSave() {
+  $("saveStatus").textContent = "Saving…";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 300);
+}
+
+async function save() {
+  const clean = Object.fromEntries(Object.entries(label).filter(([k, v]) =>
+    v !== "" && v != null && !(typeof v === "object" && !Object.keys(v).length) && k !== "labeled_at"));
+  try {
+    await api(`/api/label/${cur.cve_id}`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                           body: JSON.stringify(clean) });
+    items[idx].labeled = isDone(clean);
+    $("saveStatus").textContent = "Saved";
+    renderProgress();
+  } catch (e) {
+    $("saveStatus").textContent = `Save failed: ${e.message}`;
+  }
+}
+
+function set(field, value) {
+  label[field] = String(label[field]) === String(value) ? null : value;  // click again to unset
+  if (field === "desc_clarity" && label[field] != null) label[field] = Number(label[field]);
+  scheduleSave(); renderForm(); renderReveal();
+}
+
+$("form").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.field) return set(b.dataset.field, b.dataset.value);
+  if (b.dataset.cwe) {
+    const fit = { ...(label.cwe_fit || {}) };
+    fit[b.dataset.cwe] = fit[b.dataset.cwe] === b.dataset.value ? undefined : b.dataset.value;
+    label.cwe_fit = JSON.parse(JSON.stringify(fit));
+  } else if (b.dataset.metric) {
+    const cv = { ...(label.cvss31 || {}) };
+    cv[b.dataset.metric] = cv[b.dataset.metric] === b.dataset.value ? undefined : b.dataset.value;
+    label.cvss31 = JSON.parse(JSON.stringify(cv));
+  } else if (b.id === "showCna") {
+    label.cvss_saw_cna = true;   // recorded so evaluation can separate blind from anchored CVSS labels
+  } else if (b.id === "clearCvss") {
+    label.cvss31 = {};
+  } else if (b.id === "clearAll") {
+    if (!confirm("Clear every label for this CVE?")) return;
+    label = {};
+  } else return;
+  scheduleSave(); renderForm(); renderReveal();
+});
+$("form").addEventListener("input", (e) => {
+  if (e.target.id === "notes" || e.target.id === "better_cwe") { label[e.target.id] = e.target.value.trim(); scheduleSave(); }
+});
+$("dots").addEventListener("click", (e) => { const i = e.target.dataset.i; if (i != null) go(Number(i)); });
+$("prev").onclick = () => go(idx - 1);
+$("next").onclick = () => go(idx + 1);
+$("nextUnlabeled").onclick = () => nextUnlabeled();
+
+async function go(i) {
+  if (i < 0 || i >= items.length) return;
+  if (saveTimer) { clearTimeout(saveTimer); await save(); saveTimer = null; }
+  idx = i; await load();
+}
+function nextUnlabeled() {
+  const n = items.length;
+  for (let k = 1; k <= n; k++) { const i = (idx + k) % n; if (!items[i].labeled) return go(i); }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "ArrowLeft") go(idx - 1);
+  else if (e.key === "ArrowRight") go(idx + 1);
+  else if (e.key === "]") nextUnlabeled();
+  else if (e.key === "y" || e.key === "n") set("security_impact", e.key);
+  else if (/^[0-4]$/.test(e.key)) set("desc_clarity", Number(e.key));
+});
+
+init().catch((e) => { document.body.insertAdjacentHTML("afterbegin", `<p style="color:var(--bad);padding:16px">Failed to load: ${esc(e.message)}</p>`); });
+</script>
+</body>
+</html>

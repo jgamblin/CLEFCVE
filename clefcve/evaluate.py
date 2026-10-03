@@ -197,10 +197,10 @@ def ssvc_section(con) -> str:
 
 
 def vuln_section(con) -> str:
-    out = ["## Q1: Is this a vulnerability?\n",
-           "Rejected records use their last published text, recovered from git history. "
-           "`rejected_invalid` = rejection reason says it isn't a valid vulnerability; duplicates are separate "
-           "because they *are* real vulnerabilities.\n"]
+    out = ["## Q1: Does the description establish a security impact?\n",
+           "Rephrased from \"is this a vulnerability?\" after the first run: the text alone couldn't separate CVEs later "
+           "rejected as invalid from valid ones (p = 0.93 vs 0.89), because the reasons for rejection are rarely "
+           "visible in the description. Rejected records use their last published text from git history.\n"]
     out.append(md_table(con, f"""
         WITH g AS (
             SELECT cve_id, CASE WHEN state = 'PUBLISHED' THEN 'published'
@@ -208,25 +208,104 @@ def vuln_section(con) -> str:
                                 WHEN lower(rejected_reason) LIKE '%duplicate%' THEN 'rejected_duplicate'
                                 ELSE 'rejected_other' END AS grp
             FROM cves)
-        SELECT grp, model, count(*) AS n, round(avg(p_true), 3) AS mean_p_vuln,
-               round(100.0 * avg((p_true < 0.5)::INT), 1) AS pct_flagged_not_vuln
-        FROM ans JOIN g USING (cve_id) WHERE question_id = 'is_vuln'
+        SELECT grp, model, count(*) AS n, round(avg(p_true), 3) AS mean_p_impact,
+               round(100.0 * avg((p_true < 0.5)::INT), 1) AS pct_no_impact_stated
+        FROM ans JOIN g USING (cve_id) WHERE question_id = 'security_impact_stated'
         GROUP BY ALL ORDER BY grp, model DESC
     """))
-    out.append("\nWhy (vuln_reason), published CVEs only:\n")
+    out.append("\nHow the impact is supported (`impact_basis`), published CVEs:\n")
     out.append(md_table(con, """
-        SELECT model, choice AS reason, count(*) AS n
-        FROM ans JOIN cves USING (cve_id) WHERE question_id = 'vuln_reason' AND state = 'PUBLISHED'
-        GROUP BY ALL ORDER BY model DESC, n DESC
+        SELECT model, choice AS basis, count(*) AS n,
+               round(100.0 * count(*) / sum(count(*)) OVER (PARTITION BY model), 1) AS pct
+        FROM ans JOIN cves USING (cve_id) WHERE question_id = 'impact_basis' AND state = 'PUBLISHED'
+        GROUP BY model, choice ORDER BY model DESC, n DESC
     """))
-    out.append("\nPublished CVEs Clef (27B) is least convinced are vulnerabilities:\n")
+    out.append("\nBy CNA: share of descriptions with no security impact established (Clef 27B, ≥ 5 sampled CVEs):\n")
     out.append(md_table(con, """
-        SELECT cve_id, assigner, round(p_true, 3) AS p_vuln,
+        SELECT assigner, count(*) AS n, round(100.0 * avg((p_true < 0.5)::INT), 1) AS pct_no_impact_stated
+        FROM ans JOIN cves USING (cve_id)
+        WHERE question_id = 'security_impact_stated' AND model = 'clef' AND state = 'PUBLISHED'
+        GROUP BY 1 HAVING count(*) >= 5 ORDER BY pct_no_impact_stated DESC, n DESC
+    """))
+    out.append("\nPublished CVEs where Clef 27B finds the least stated impact:\n")
+    out.append(md_table(con, """
+        SELECT cve_id, assigner, round(p_true, 3) AS p_impact,
                (SELECT choice FROM ans r WHERE r.cve_id = x.cve_id AND r.model = x.model
-                AND r.question_id = 'vuln_reason') AS reason, left(description, 120) AS description
+                AND r.question_id = 'impact_basis') AS basis, left(description, 120) AS description
         FROM ans x JOIN cves USING (cve_id)
-        WHERE question_id = 'is_vuln' AND state = 'PUBLISHED' AND model = 'clef'
+        WHERE question_id = 'security_impact_stated' AND state = 'PUBLISHED' AND model = 'clef'
         ORDER BY p_true LIMIT 10
+    """))
+    return "\n".join(out)
+
+
+def load_gold(con) -> int:
+    """Register hand labels from gold/labels.json as temp tables `gold` and `gold_cvss` (long form)."""
+    from .labeler import LABELS_PATH, is_done, load_labels
+    labels = {k: v for k, v in load_labels(LABELS_PATH).items() if is_done(v)}
+    con.execute("""CREATE OR REPLACE TEMP TABLE gold (cve_id VARCHAR, security_impact BOOLEAN, impact_basis VARCHAR,
+                   is_vuln VARCHAR, desc_clarity INTEGER, cvss_saw_cna BOOLEAN)""")
+    con.execute("CREATE OR REPLACE TEMP TABLE gold_cwe (cve_id VARCHAR, cwe_id VARCHAR, fit VARCHAR)")
+    con.execute("CREATE OR REPLACE TEMP TABLE gold_cvss (cve_id VARCHAR, metric VARCHAR, value VARCHAR)")
+    for cve_id, l in labels.items():
+        con.execute("INSERT INTO gold VALUES (?, ?, ?, ?, ?, ?)", [
+            cve_id, l["security_impact"] == "y", l.get("impact_basis"), l.get("is_vuln"), l["desc_clarity"],
+            bool(l.get("cvss_saw_cna"))])
+        for cwe_id, fit in (l.get("cwe_fit") or {}).items():
+            con.execute("INSERT INTO gold_cwe VALUES (?, ?, ?)", [cve_id, cwe_id, fit])
+        cv = l.get("cvss31") or {}
+        if len(cv) == len(CVSS31):  # only complete vectors count
+            for m, v in cv.items():
+                con.execute("INSERT INTO gold_cvss VALUES (?, ?, ?)", [cve_id, m, v])
+    return len(labels)
+
+
+def gold_section(con) -> str:
+    n = load_gold(con)
+    out = ["## Accuracy against hand labels (gold set)\n"]
+    if not n:
+        return out[0] + "\n_No labels yet: run `python -m clefcve.labeler` and label `gold/to_label.csv`._\n"
+    out.append(f"{n} CVEs labeled. Unlike the agreement numbers elsewhere, these are scored against your judgment.\n")
+    out.append(md_table(con, """
+        SELECT x.model, count(*) AS n,
+               round(100.0 * avg(((x.p_true >= 0.5) = g.security_impact)::INT), 1) AS q1_accuracy_pct,
+               round(100.0 * avg(((x.p_true >= 0.5) AND NOT g.security_impact)::INT), 1) AS false_yes_pct,
+               round(100.0 * avg(((x.p_true < 0.5) AND g.security_impact)::INT), 1) AS false_no_pct
+        FROM gold g JOIN ans x USING (cve_id) WHERE x.question_id = 'security_impact_stated'
+        GROUP BY 1 ORDER BY 1 DESC
+    """))
+    out.append("\nDescription clarity (0-4): mean absolute error and share within one level.\n")
+    out.append(md_table(con, """
+        SELECT x.model, count(*) AS n, round(avg(abs(x.score - g.desc_clarity)), 2) AS mae,
+               round(100.0 * avg((abs(x.score - g.desc_clarity) <= 1)::INT), 1) AS within_1_pct,
+               round(corr(x.score, g.desc_clarity), 2) AS pearson_r
+        FROM gold g JOIN ans x USING (cve_id) WHERE x.question_id = 'desc_clarity'
+        GROUP BY 1 ORDER BY 1 DESC
+    """))
+    out.append("\nCWE fit: exact label match, and agreement on the coarser exact-vs-not question.\n")
+    out.append(md_table(con, """
+        SELECT x.model, count(*) AS n, round(100.0 * avg((x.choice = g.fit)::INT), 1) AS same_fit_pct,
+               round(100.0 * avg(((x.choice = 'exact') = (g.fit = 'exact'))::INT), 1) AS exact_vs_not_pct
+        FROM gold_cwe g JOIN ans x ON x.cve_id = g.cve_id AND x.item = g.cwe_id AND x.question_id = 'cwe_fit'
+        GROUP BY 1 ORDER BY 1 DESC
+    """))
+    out.append("\nCVSS v3.1 per metric: who is closer to your vector, Clef or the CNA? "
+               "(`blind_n` = labels made without revealing the CNA vector.)\n")
+    parsed = " UNION ALL ".join(
+        f"SELECT cve_id, '{m}' AS metric, regexp_extract(vector, '/{m}:([A-Z])', 1) AS value FROM cna31" for m in CVSS31)
+    out.append(md_table(con, f"""
+        WITH cna31 AS (SELECT cve_id, vector FROM metrics WHERE source = 'cna' AND version IN ('3.0', '3.1')
+                       QUALIFY row_number() OVER (PARTITION BY cve_id ORDER BY version DESC) = 1),
+             cna AS ({parsed}),
+             m AS (SELECT DISTINCT model FROM ans WHERE pack = 'cvss31')
+        SELECT gc.metric, m.model, count(x.choice) AS n,
+               count(*) FILTER (x.choice IS NOT NULL AND NOT g.cvss_saw_cna) AS blind_n,
+               round(100.0 * avg((x.choice = gc.value)::INT), 1) AS clef_match_pct,
+               round(100.0 * avg((c.value = gc.value)::INT) FILTER (x.choice IS NOT NULL), 1) AS cna_match_pct
+        FROM gold_cvss gc JOIN gold g USING (cve_id) CROSS JOIN m
+        LEFT JOIN ans x ON x.cve_id = gc.cve_id AND x.model = m.model AND x.question_id = 'cvss31_' || gc.metric
+        LEFT JOIN cna c ON c.cve_id = gc.cve_id AND c.metric = gc.metric
+        GROUP BY gc.metric, m.model ORDER BY array_position({CVSS31}, gc.metric), m.model DESC
     """))
     return "\n".join(out)
 
@@ -356,7 +435,7 @@ def report(con) -> str:
         f"the {run[3]}-day slice plus all recovered REJECTED records.\n",
         "| model | pack | CVEs | answers |\n|---|---|---|---|\n" +
         "\n".join(f"| {m} | {p} | {c} | {a} |" for m, p, c, a in counts) + "\n",
-        vuln_section(con), description_section(con), cwe_section(con),
+        gold_section(con), vuln_section(con), description_section(con), cwe_section(con),
         "## Q4: Is the CVSS correct?\n", severity_section(con), cvss_section(con, "3.1"), cvss_section(con, "4.0"),
         ssvc_section(con), rules_section(con), models_section(con),
     ]

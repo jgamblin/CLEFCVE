@@ -1,0 +1,494 @@
+cve_id,state,assigner,title,description,cna_cwe,cna_cvss31,rejected_reason,is_vuln,desc_clarity,cwe_ok,better_cwe,cvss31_vector,notes
+CVE-2026-5132,PUBLISHED,Mattermost,Unbounded zlib decompression in Calls SDP WebSocket messages,"Mattermost versions 11.9.x <= 11.9.0, 11.8.x <= 11.8.4, 11.7.x <= 11.7.7, 10.11.x <= 10.11.22 fail to limit size of unpacked SDP messages compressed with zlib, which allows attacker to deny service or crash server via sending many SDP messages that unpack to large size.. Mattermost Advisory ID: MMSA-2026-00643",CWE-409,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-16468,PUBLISHED,ibm,DataStage on Cloud Pak for Data has several vulnerabilities,IBM DataStage on Cloud Pak for Data 5.4.0.0 could allow a remote authenticated attacker to execute arbitrary commands due to OS command injection.,CWE-78,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-1025,PUBLISHED,ibm,Multiple vulnerabilities affect IBM License Key Server Administration and Reporting Tool and IBM LKS Administration Agent,"IBM Common Licensing Agent 9.0, Agent 9.0.0.1, Agent 9.0.0.2, ART 9.0, ART 9.0.0.1, and ART 9.0.0.2 is vulnerable to cross-site scripting. This vulnerability allows users to embed arbitrary JavaScript code in the Web UI thus altering the intended functionality potentially leading to credentials disclosure within a trusted session.",CWE-79,CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2026-94032,PUBLISHED,VulDB,itsourcecode Leave Management System index.php sql injection,A flaw has been found in itsourcecode Leave Management System 1.0. This affects an unknown part of the file /module/department/index.php. This manipulation of the argument ID causes sql injection. It is possible to initiate the attack remotely. The exploit has been published and may be used.,CWE-89 CWE-74,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L/E:P/RL:X/RC:R,,,,,,,
+CVE-2026-76723,PUBLISHED,hpe,Unauthenticated Adjacent Buffer Overflow Vulnerabilities lead to Remote Code Execution in HPE Networking Instant ON APS,Buffer overflow vulnerabilities exist in the affected interface of HPE Networking Instant ON APS that could allow an unauthenticated adjacent attacker to achieve remote code execution. Successful exploitation could allow an attacker to execute arbitrary commands on the underlying operating system.,,CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2026-95353,PUBLISHED,Chrome,,Use after free in Bindings in Google Chrome prior to 154.0.8037.57 allowed a remote attacker to execute arbitrary code inside the sandbox via a crafted HTML page. (Chromium security severity: Medium),CWE-416,,,,,,,,
+CVE-2026-89680,PUBLISHED,Linux,nfsd: fix nfsd_file leak on inter-server COPY setup failure,"In the Linux kernel, the following vulnerability has been resolved:
+
+nfsd: fix nfsd_file leak on inter-server COPY setup failure
+
+When nfsd4_setup_inter_ssc() fails, nfsd4_copy() returns
+nfserr_offload_denied directly, bypassing the out: label where
+release_copy_files() would drop the nf_dst reference taken by
+nfs4_preprocess_stateid_op(). Each failed inter-server COPY
+leaks one nfsd_file, pinning file/inode/dentry/vfsmount.
+
+Fix by setting status and jumping to out: instead of returning
+directly.",,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-82191,PUBLISHED,Joomla,"Joomla Extension - j2commerce.com - Unescaped request data reflected into PayPal notify redirect in J2Store 1.0.0-3.3.2, 4.0.0-4.0.22, 4.1.0-4.1.7","Joomla Extension - j2commerce.com - Unescaped request data reflected into PayPal notify redirect in J2Store 1.0.0-3.3.2, 4.0.0-4.0.22, 4.1.0-4.1.7 - A crafted link to the paypal notify endpoint, if followed by a victim's browser (or an automated system that fetches it), causes the resulting redirect to `com_j2store`'s checkout controller to carry attacker-chosen query parameters instead of only the intended `view=checkout&task=confirmPayment&orderpayment_type=...&paction=process` set — parameter injection/smuggling into that follow-up request. This requires a victim to load the crafted link (`UI:R`/`UI:P`); it does not by itself grant an unauthenticated attacker anything they could not already obtain by requesting the target `com_j2store` URL directly with their own parameters.",CWE-1241,,,,,,,,
+CVE-2026-69771,PUBLISHED,microsoft,Windows Container Manager Service Security Feature Bypass Vulnerability,Improper link resolution before file access ('link following') in Windows Container Manager Service allows an authorized attacker to bypass a security feature locally.,CWE-59,CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N/E:U/RL:O/RC:C,,,,,,,
+CVE-2026-85651,PUBLISHED,VulnCheck,Trigger.dev before 4.5.2 Unauthorized Environment Access via Run Replay,"Trigger.dev versions before 4.5.2 fail to validate environment membership during run replay operations, allowing authenticated attackers to inject task runs into arbitrary environments. Attackers can replay their own runs into other organizations' or projects' environments to consume victim resources and pollute run history.",CWE-862,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:H/A:L,,,,,,,
+CVE-2026-47540,PUBLISHED,nvidia,,"NVIDIA GPU Display Driver for Windows and Linux contains a vulnerability in the kernel mode layer where an attacker could cause an integer underflow. A successful exploit of this vulnerability might lead to code execution, denial of service, escalation of privileges, information disclosure, and data tampering.",CWE-191,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-67221,PUBLISHED,GitHub_M,RabbitMQ: AMQP 1.0 shovel status exposes plaintext URI passwords,"RabbitMQ is a messaging and streaming broker. Prior to versions 3.13.15, 4.0.20, 4.1.11, 4.2.6, and 4.3.0, The AMQP 0-9-1 shovel calls amqp_uri:remove_credentials before storing its connection URI, but the AMQP 1.0 shovel stores the raw URI including the password. The stored URI is visible via GET /api/shovels and via rabbitmqctl shovel_status. Preconditions include The Shovel plugin must be in use with AMQP 1.0 shovels configured using URI-embedded credentials. Reading the exposed status requires the monitoring tag.. This issue is fixed in versions 3.13.15, 4.0.20, 4.1.11, 4.2.6, and 4.3.0.",CWE-312,,,,,,,,
+CVE-2026-100854,PUBLISHED,VulnCheck,AzuraCast before 0.23.6 Metadata Injection via Liquidsoap API,"AzuraCast before 0.23.6 lacks RequireInternalConnection middleware on the Liquidsoap API endpoint and incorrectly derives the AutoDJ flag from header presence rather than validated value. Users with View station permission can inject arbitrary now-playing metadata, disrupt live broadcasts, and disclose filesystem paths.",CWE-862,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L,,,,,,,
+CVE-2026-69601,PUBLISHED,microsoft,Microsoft Windows Media Foundation Remote Code Execution Vulnerability,Heap-based buffer overflow in Microsoft Windows Media Foundation allows an unauthorized attacker to execute code over a network.,CWE-122,CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C,,,,,,,
+CVE-2026-88259,PUBLISHED,icscert,CareCam CM2507 Missing Authentication for Critical Function,CareCam CM2507 IP cameras do not require authentication for access to its network video streaming service. An unauthenticated attacker with network access to the affected device could retrieve live camera video.,CWE-306,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-77249,PUBLISHED,GitHub_M,MCP Atlassian: Incomplete fix for CVE-2026-27826: redirect-based SSRF via unhooked requests session in Jira user-permission lookup,"MCP Atlassian is a Model Context Protocol (MCP) server for Atlassian products (Confluence and Jira). Prior to 0.22.0, JiraUserMixin._lookup_user_by_permissions uses the module-level requests.get function instead of the fetcher's protected session. A caller-controlled public Jira URL can redirect that unhooked request to an internal address, bypassing the redirect checks added for CVE-2026-27826. The advisory traces the vulnerable input and processing flow through JiraUserMixin._lookup_user_by_permissions, requests.get, self.jira._session.get, and _make_ssrf_safe_hook, which identify the affected entry points, controls, and code paths. This issue is fixed in version 0.22.0.",CWE-918,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N,,,,,,,
+CVE-2026-17619,PUBLISHED,ibm,The IBM Platform RTM is affected by an SQL injection vulnerability,"IBM Platform RTM is vulnerable to SQL injection. A remote attacker could send specially crafted SQL statements, which could allow the attacker to view, add, modify, or delete information in the back-end database.",CWE-89,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:L,,,,,,,
+CVE-2026-61612,PUBLISHED,GitHub_M,@aborruso/ckan-mcp-server has SSRF via DNS-name → internal IP — incomplete fix of CVE-2026-53509,"CKAN MCP Server is a tool for querying CKAN open data portals. Prior to version 0.4.108, the SSRF guard `validateServerUrl` (added for CVE-2026-33060, extended for CVE-2026-53509) validates only the hostname string and never resolves DNS. Any caller-supplied `server_url` whose hostname *resolves* to an internal address passes the guard, so the server issues requests to loopback and cloud metadata (`169.254.169.254`). This is a third bypass of the same guard, and it reaches IMDS — strictly more than CVE-2026-53509, which only reached loopback. Version 0.4.108 contains an updated fix.",CWE-918,CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-47579,PUBLISHED,nvidia,,"The NVIDIA GPU Display Driver for Windows contains a vulnerability in the kernel mode driver through which a user might trigger a use-after-free condition. Successful exploitation of this issue could lead to code execution, escalation of privileges, denial of service, information disclosure, and data tampering.",CWE-416,CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2022-35497,PUBLISHED,mitre,,"In Trimble TM4WEB 21.4.0.4 due to security misconfiguration with session identifiers, it is possible to recover valid session cookies via reflected cross-site scripting affecting the external document viewer endpoint.",,,,,,,,,
+CVE-2026-93789,PUBLISHED,Linux,wifi: iwlwifi: bound aligned TLV advance in FW parser,"In the Linux kernel, the following vulnerability has been resolved:
+
+wifi: iwlwifi: bound aligned TLV advance in FW parser
+
+Validate ALIGN(tlv_len, 4) against remaining parser length before
+consuming bytes from the firmware image.
+
+This avoids length underflow on malformed TLVs.",,,,,,,,,
+CVE-2026-85008,PUBLISHED,openjs,undici vulnerable to caching and replay of unsafe HTTP method responses,"undici's cache interceptor documents that only safe HTTP methods are cached, but its logic to skip caching is built by subtracting the configured methods from the set of safe methods, so an unsafe method such as POST, PUT, or DELETE is never placed in the skip list and instead falls through to the full cache-read path. The response-storage gate also lacked a method check, so a response to an unsafe request that is heuristically cacheable or carries an explicit Cache-Control directive is stored and later replayed from cache. Because response headers from a remote origin are untrusted, an origin can answer once with a cacheable status and then have the client's own subsequent state-changing requests to that path served from the stale cache entry without ever reaching the origin, an integrity failure that occurs under the interceptor's default configuration. This affects undici versions from 7.0.0 up to 7.29.1 and from 8.0.0 up to 8.10.2. Users should upgrade to undici 7.29.1 or 8.10.2.",CWE-345,CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N,,,,,,,
+CVE-2026-91934,PUBLISHED,VulnCheck,Flowise before 3.1.4 Remote Code Execution via SQL Database Chain,"Flowise versions before 3.1.4 fail to validate file paths in the SQL Database Chain node when connecting to SQLite databases, allowing authenticated attackers to write arbitrary files. Attackers can write malicious SQLite databases to system directories or inject files into the web root to execute commands or perform stored XSS attacks.",CWE-22,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-87200,PUBLISHED,oracle,,"Vulnerability in the Oracle Hyperion Financial Management product of Oracle Hyperion (component: Security).   The supported version that is affected is 11.2.26.0.000. Easily exploitable vulnerability allows unauthenticated attacker with network access via HTTP to compromise Oracle Hyperion Financial Management.  Successful attacks of this vulnerability can result in  unauthorized creation, deletion or modification access to critical data or all Oracle Hyperion Financial Management accessible data and unauthorized ability to cause a partial denial of service (partial DOS) of Oracle Hyperion Financial Management. CVSS 3.1 Base Score 8.2 (Integrity and Availability impacts).  CVSS Vector: (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:L).",,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:L,,,,,,,
+CVE-2026-91840,PUBLISHED,fedora,Networkmanager-vpnc: networkmanager-vpnc: local privilege escalation to root via newline injection in vpn username,"A flaw was found in NetworkManager-vpnc. This vulnerability allows a local unprivileged user to escalate privileges to root. By injecting a newline character into the VPN username field, an attacker can manipulate the vpnc configuration to execute an arbitrary program with root privileges when the malicious VPN connection is activated.",CWE-93,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2025-59607,PUBLISHED,qualcomm,Untrusted Pointer Dereference in Windows Compute,Memory Corruption when copying large input data exceeds normal allocation limits.,CWE-822,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-89050,PUBLISHED,WPScan,Quads Ads Manager for Google AdSense < 3.0.5 - Subscriber+ Ad-Selling Payment Bypass via Unverified Success Return URL,"The Quads Ads Manager for Google AdSense WordPress plugin before 3.0.5 does not verify payment completion with the configured payment gateway before marking an ad-selling order as paid, allowing users who can place an order to obtain a paid ad placement without payment.",,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N,,,,,,,
+CVE-2026-83012,PUBLISHED,oracle,,"Vulnerability in the Oracle WebCenter Enterprise Capture product of Oracle Fusion Middleware (component: Client Bundle).  Supported versions that are affected are 12.2.1.4.0 and  14.1.2.0.0. Easily exploitable vulnerability allows low privileged attacker with network access via HTTP to compromise Oracle WebCenter Enterprise Capture.  While the vulnerability is in Oracle WebCenter Enterprise Capture, attacks may significantly impact additional products (scope change).  Successful attacks of this vulnerability can result in  unauthorized access to critical data or complete access to all Oracle WebCenter Enterprise Capture accessible data. CVSS 3.1 Base Score 7.7 (Confidentiality impacts).  CVSS Vector: (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N).",,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N,,,,,,,
+CVE-2026-94952,PUBLISHED,mitre,,A stack-based buffer overflow vulnerability exists in the web management interface of TOTOLINK N150RT (NTR150) firmware V3.4.0-B20201030. It is reachable through the route /boafrm/formPortFw (port-forwarding configuration handler) and is triggered by the ip_subnet and fw_ip request parameters during the rule-addition flow.,,,,,,,,,
+CVE-2026-82828,PUBLISHED,Hitachi,Improper authorization may allow a general user to perform operations equivalent to those available with administrator privileges,"Hitachi Coding Software Suite contains an Incorrect Authorization vulnerability that allows an unprivileged user to perform administrator-level operations.
+
+
+This issue affects Hitachi Coding Software Suite: through 3.3.0.",CWE-863,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-86338,PUBLISHED,EEF,"Ash field policies do not filter-nil forbidden calculations and aggregates, enabling an information-disclosure oracle","Ash field_policies are documented to protect against filter-based information disclosure: when a field the actor may not see is referenced in a filter, it is replaced with an expression that evaluates to nil, so a filter cannot be used as a yes/no oracle to read a value the actor cannot see.
+
+This nilling was applied to attributes but not to calculations or aggregates. A user-supplied filter reference to a calculation or aggregate carries an Ash.Query.Calculation / Ash.Query.Aggregate struct, which the authorizer's reference replacement did not match (it only matched the Ash.Resource.* structs), so the filter ran against the real value.
+
+As a result, an actor whose field policies forbid a calculation or aggregate can still filter by it (for example filter(secret_calc == ""x"") or filter(comment_count == n)) and learn the value from whether rows match — an oracle that recovers field-policy-protected values one probe at a time. Filtering is commonly exposed to lower-privileged actors (for example via AshGraphql or AshJsonApi filter arguments), which is exactly the surface field policies are meant to protect.
+
+The fix routes filter references to calculations and aggregates through the same field-policy nilling as attributes.
+
+This issue affects ash: from 2.11.0-rc.0 before 3.33.4.",CWE-1220,,,,,,,,
+CVE-2026-103884,PUBLISHED,redhat,Keycloak-services: keycloak-services: path traversal in x.509 crl distribution point allows arbitrary local file read,"A flaw was found in the X.509 client certificate authenticator of Keycloak. When CRL Distribution Point checking is enabled, the server fails to properly validate the file paths provided in a client certificate. An attacker can provide a specially crafted certificate that causes the server to attempt to read sensitive files from the local system or exhaust memory by loading extremely large files, potentially leading to information disclosure or a system crash.",CWE-22,CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:H,,,,,,,
+CVE-2026-95665,PUBLISHED,CIRCL,MISP Reflected Cross-Site Scripting in Event Export Confirmation Form via Unescaped JSON,"MISP contains a reflected cross-site scripting (XSS) vulnerability in the event REST search export confirmation form. The view template app/View/Events/ajax/eventRestSearchExportConfirmationForm.ctp renders a URL-supplied event ID list into a single-quoted JavaScript string literal using PHP's json_encode() without any hex-encoding flags. By default, json_encode() escapes double quotes and backslashes but does not escape single quotes. Because the JavaScript string is delimited by single quotes, an attacker can inject a single-quote character to terminate the string literal and execute arbitrary JavaScript in the victim's browser session.
+
+The vulnerability affects the Default and UiBeta themes, both of which render this view. The Overmind theme's own copy of the form already passed the value through an escaped data attribute and was not affected by this specific sink.
+
+Preconditions: the victim must be an authenticated MISP user and must actively open or navigate to the attacker-crafted URL. The attacker does not require an account or any prior access to the MISP instance.
+
+Security impact: successful exploitation allows execution of arbitrary JavaScript in the context of the MISP web application, potentially leading to session hijacking, unauthorized actions performed on behalf of the victim, exfiltration of sensitive data visible in the session, or further client-side attacks. The vulnerable component's own confidentiality, integrity, and availability are not directly compromised; the impact is on the underlying user session.",CWE-79,,,,,,,,
+CVE-2026-76682,PUBLISHED,hpe,Unauthenticated Denial-of-Service Vulnerabilities in HPE Networking EdgeConnect SD-WAN Gateways,A vulnerability in the network security monitoring component of intrusion detection systems could allow an unauthenticated remote attacker to exploit a limited buffer overflow. Successful exploitation could allow an attacker to cause a denial-of-service or potentially execute arbitrary code on the system.,,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:H,,,,,,,
+CVE-2026-94213,PUBLISHED,redhat,Keycloak-services: keycloak-services: authorization services policy evaluation endpoint leaks user identity,"A flaw was found in the Authorization Services component of Keycloak, an open-source identity and access management solution. The issue occurs in the policy evaluation endpoint, which is used by administrators to test how access policies apply to specific users. Due to missing authorization checks, a delegated administrator with limited viewing privileges can access the full profile and role information of any user in the realm, even if they are not permitted to view user details. This could lead to the exposure of sensitive information such as email addresses and assigned security roles.",CWE-862,CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-47494,PUBLISHED,nvidia,,"NVIDIA GPU Display Driver for Linux contains a vulnerability where a user might be able to cause a format string issue. A successful exploit of this vulnerability might lead to code execution, escalation of privileges, data tampering, denial of service, and information disclosure.",CWE-134,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-76681,PUBLISHED,hpe,Authenticated Information Disclosure Vulnerability in HPE Networking EdgeConnect SD-WAN Orchestrator API,A vulnerability in the API of EdgeConnect SD-WAN Orchestrator could allow an authenticated remote attacker with low privileges to access sensitive information beyond what is authorized by the user's existing privilege level. Successful exploitation could allow an attacker to retrieve information which could be used to potentially gain further access to network services supported by EdgeConnect SD-WAN Orchestrator.,,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:L/A:N,,,,,,,
+CVE-2026-82052,PUBLISHED,mongodb,$regexFindAll may crash mongod server when byte-matching multi-byte UTF-8 chars,"The $regexFindAll expression can be used by an authenticated user who can run aggregation pipeline stages to crash a MongoDB server (mongod). Under certain specific conditions the  regex match can start in the middle of a multi-code-unit character, triggering an assertion during query execution.",CWE-617,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-98105,PUBLISHED,Linux,net: ethernet: oa_tc6: Improve the error recovery,"In the Linux kernel, the following vulnerability has been resolved:
+
+net: ethernet: oa_tc6: Improve the error recovery
+
+When oversubscribed traffic causes lot of buffer overflow errors,
+probably due to loss of data chunks, driver fails to find a
+data chunk with end_valid bit set, before it runs out of sk buffer
+space. As a result, assert is seen during skb_put.
+
+Now, check is made if skb buffer has enough tailroom for the
+incoming data before accepting. If there is no room, current
+frame is abandoned and it will start looking for a data chunk
+with start_valid bit, that is a new frame.
+
+SK buffer allocation error is considered as recoverable error.
+
+rx_buf_overflow flag is too specific and no longer the only
+condition this flag is used for. Therefore it is renamed as
+wait_until_start_valid. This is more appropriate as this flag
+is used to look for the next data chunk with SV bit set, after
+failures like buffer overflow, buffer allocation failure, skb pointer
+validity besides buffer overflow error.
+
+Not writing to status0 if it reads 0.",,,,,,,,,
+CVE-2026-83269,PUBLISHED,oracle,,"Vulnerability in the Oracle BI Publisher product of Oracle Analytics (component: BI Platform Security).  Supported versions that are affected are 8.2.0.0.0, 12.2.1.4.0 and  26.01.0.0.0. Easily exploitable vulnerability allows unauthenticated attacker with network access via HTTP to compromise Oracle BI Publisher.  Successful attacks of this vulnerability can result in takeover of Oracle BI Publisher. CVSS 3.1 Base Score 9.8 (Confidentiality, Integrity and Availability impacts).  CVSS Vector: (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H).",,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-73594,PUBLISHED,dell,,"Dell Secure Connect Gateway (SCG) Policy Manager, versions prior to 5.34.00.16, Versions prior to 5.36, contains an Improper Certificate Validation vulnerability. An unauthenticated attacker with adjacent network access could potentially exploit this vulnerability, leading to Information disclosure, Information tampering, and Protection mechanism bypass.",CWE-295,CVSS:3.1/AV:A/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N,,,,,,,
+CVE-2026-84721,PUBLISHED,redhat,"Automation-controller: automation-controller: email notification backend allows ssrf via user-controlled smtp host/port (internal port-scan oracle, smtp password exfil)","A server-side request forgery flaw was found in the Ansible Automation Platform
+automation-controller email notification backend. The email backend passes the user-supplied SMTP
+host and port from a notification template directly to the SMTP client without validating that
+the target is not an internal, loopback, link-local, or reserved address. An authenticated user
+with organization notification-admin permission can create or modify an email notification
+template pointing at an arbitrary internal address, trigger a test, and have the controller task
+process open a raw TCP connection to that address. The resulting connection error is reflected
+back through the notification record, providing a three-state internal port-scan oracle (open,
+closed, filtered) over the control-plane's cluster network, including the in-cluster Kubernetes
+API. When a shared organization template holds a stored SMTP password, redirecting the host can
+also cause that credential to be transmitted to an attacker-controlled server.",CWE-918,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2026-67643,PUBLISHED,microsoft,Microsoft SQL Server Remote Code Execution Vulnerability,Heap-based buffer overflow in SQL Server allows an unauthorized attacker to execute code over a network.,CWE-122,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C,,,,,,,
+CVE-2026-94656,PUBLISHED,apache,Apache Thrift: rb `TJsonProtocol`/`TJSONProtocol` has no string size bound,"Allocation of resources without limits or throttling vulnerability in Apache Thrift ruby bindings.
+
+
+
+This issue affects Apache Thrift: before 0.25.0.
+
+
+
+Users are recommended to upgrade to version 0.25.0, which fixes the issue.",CWE-770,,,,,,,,
+CVE-2026-86106,PUBLISHED,Arista,Security Advisory 0179,An unauthenticated actor with network access to the private HA interconnect may trigger sensitive HA peer functions without verification. This could result in elevated command execution on Edge units where HA is enabled.,CWE-306,CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2026-93926,PUBLISHED,apache,Apache Thrift: C++ `THeaderTransport::untransform()` leaks the zlib stream on the error path,"Missing release of memory after effective lifetime, Missing release of resource after effective lifetime vulnerability in Apache Thrift THeaderTransport.
+
+
+
+This issue affects Apache Thrift: before 0.25.0.
+
+
+
+Users are recommended to upgrade to version 0.25.0, which fixes the issue.",CWE-772 CWE-401,,,,,,,,
+CVE-2026-103680,PUBLISHED,fedora,Tnef: heap buffer overflow in find_free_number() via numbered-backup suffix generation,"A flaw was found in tnef. A heap-based buffer overflow can occur in the find_free_number() function when generating numbered backup suffixes for duplicate filenames. When numbered backups are enabled and file overwriting is disabled, an attacker can supply a specially crafted Transport Neutral Encapsulation Format (TNEF) file with an excessive number of colliding attachment filenames, causing the numeric counter to write past the allocated memory buffer. This issue may result in an application crash, leading to a Denial of Service (DoS), or potentially arbitrary code execution.",CWE-787,CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:L,,,,,,,
+CVE-2026-102771,PUBLISHED,VulDB,Naichen ThinkCMF Email Template MailController.php templatePut special elements in template engine,A security vulnerability has been detected in Naichen ThinkCMF up to 8.0.7. Affected by this issue is the function MailController::templatePut of the file cmf-api/src/admin/controller/MailController.php of the component Email Template. The manipulation leads to improper neutralization of special elements used in a template engine. The attack is possible to be carried out remotely. The exploit has been disclosed publicly and may be used. The vendor was contacted early about this disclosure but did not respond in any way.,CWE-1336 CWE-791,CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:L/A:L/E:P/RL:X/RC:C,,,,,,,
+CVE-2026-89099,PUBLISHED,mongodb,Race Condition in MongoDB Server Document Value Layer Leads to Memory Corruption,"A race condition in the document value layer of MongoDB Server can allow concurrent server threads to operate on the same internal memory without synchronization, leading to memory corruption. An authenticated user holding ordinary read-write privileges on a database may be able to trigger this condition over the normal client protocol, resulting in server termination and potential corruption of process memory with user-influenced content. Successful use of this issue may impact the confidentiality, integrity, and availability of the affected server process.",CWE-362,CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-95685,PUBLISHED,CIRCL,MISP Missing Authorization on replaceSuggestionInReport Event Report Action,"MISP contains an access control flaw in the EventReports functionality. The replaceSuggestionInReport action, which allows modification of suggestion content within an event report, was incorrectly mapped to the wildcard permission ('*') in the ACLComponent, making it accessible to any authenticated user regardless of their assigned permissions. All analogous report-modification actions correctly required the perm_add permission, while read-only actions such as downloadAsPDF appropriately used the wildcard. 
+
+An authenticated user without the perm_add permission could invoke the replaceSuggestionInReport endpoint to alter report suggestion data, violating the intended authorization model. 
+
+This constitutes an improper authorization weakness that could lead to unauthorized modification of event report content, potentially corrupting shared threat intelligence data or injecting misleading information into reports relied upon by other analysts and automated consumers.",CWE-862,,,,,,,,
+CVE-2026-76200,PUBLISHED,adobe,Adobe Commerce | Cross-site Scripting (Stored XSS) (CWE-79),"Adobe Commerce is affected by a stored Cross-Site Scripting (XSS) vulnerability that could be abused by an attacker to inject malicious scripts into vulnerable form fields. Malicious JavaScript may be executed in a victim's browser when they browse to the page containing the vulnerable field, potentially gaining elevated access or control over the victim's account or session. Scope is changed.",CWE-79,CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:N,,,,,,,
+CVE-2026-75721,PUBLISHED,adobe,Adobe Campaign Classic (ACC) | Improper Control of Generation of Code ('Code Injection') (CWE-94),Adobe Campaign Classic (ACC) is affected by an Improper Control of Generation of Code ('Code Injection') vulnerability that could result in arbitrary code execution in the context of the current user. An attacker could exploit this vulnerability to execute arbitrary code. Exploitation of this issue does not require user interaction. Scope is changed.,CWE-94,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2026-21093,PUBLISHED,SamsungMobile,,Stack-based buffer overflow in PROCA trustlet prior to SMR Sep-2026 Release 1 allows local privileged attackers to write out-of-bounds memory.,,,,,,,,,
+CVE-2026-90168,REJECTED,Linux,ksmbd: retain connection for pending notify work,"In the Linux kernel, the following vulnerability has been resolved:
+
+ksmbd: retain connection for pending notify work
+
+Deferred CHANGE_NOTIFY work keeps an async message ID after the original
+request work is released. A durable handle can outlive its connection, so
+the connection teardown can destroy its async IDA before the handle close
+releases the pending notify work.
+
+Give the synthetic deferred work a connection reference. Release it after
+the async ID in ksmbd_free_work_struct(). This keeps the async IDA alive
+until the deferred work is released, even when the original connection has
+already left the connection list.
+
+During server shutdown there is no client to receive a cleanup response.
+Skip the write and only release the pending work.",,,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-84536,PUBLISHED,apple,,"An integer underflow was addressed with improved input validation. This issue is fixed in macOS Golden Gate 27, macOS Sequoia 15.8, macOS Tahoe 26.7. Connecting to a malicious SMB server may lead to unexpected system termination.",,,,,,,,,
+CVE-2026-92564,PUBLISHED,apache,Apache Qpid Broker-J: Unbounded type nesting can lead to stack overflow pre-authentication in AMQP 0-8/0-9/0-9-1 field-table processing,"A pre-authentication attacker could leverage type nesting to cause a StackOverflowError potentially leading to denial of service.
+
+This issue affects Apache Qpid Broker-J: through 10.1.0.
+
+Users are recommended to upgrade to version 10.1.1, which fixes the issue.",CWE-674,,,,,,,,
+CVE-2026-78488,PUBLISHED,dell,,"Dell SCG 5.0 Appliance versions prior to 5.36.00.16 and Dell SCG 5.0 Application versions prior to 5.36.00.00, contains an Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') vulnerability. A low privileged attacker with remote access could potentially exploit this vulnerability, leading to command execution.",CWE-78,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-103543,PUBLISHED,VulDB,itsourcecode Leave Management System controller.php sql injection,A vulnerability has been found in itsourcecode Leave Management System 1.0. The affected element is an unknown function of the file /module/leavetype/controller.php. Such manipulation of the argument LEAVTID leads to sql injection. The attack can be launched remotely. The exploit has been disclosed to the public and may be used.,CWE-89 CWE-74,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L/E:P/RL:X/RC:R,,,,,,,
+CVE-2026-92244,PUBLISHED,Wordfence,PDF Invoices & Packing Slips for WooCommerce <= 5.16.1 - Unauthenticated Stored Cross-Site Scripting via Billing First Name / Last Name / Company Fields,"The PDF Invoices & Packing Slips for WooCommerce plugin for WordPress is vulnerable to Stored Cross-Site Scripting via Billing First Name / Last Name / Company Fields in all versions up to, and including, 5.16.1 due to insufficient input sanitization and output escaping. This makes it possible for unauthenticated attackers to inject arbitrary web scripts in pages that will execute whenever a user accesses an injected page. The payload survives initial storage because WooCommerce's sanitize_text_field() and wc_clean() do not strip entity-encoded strings containing no literal '<' character, allowing unauthenticated guest-checkout orders to plant the malicious content.",CWE-79,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2026-81563,PUBLISHED,isc,SVCB AliasMode additional-data error leaks qpcache references,"A BIND resolver encountering an SVCB/HTTPS AliasMode record referencing 14 or more SVCB/HTTPS ServiceMode records may fail to properly deallocate internal resources. If this happens repeatedly, resource exhaustion will eventually prevent the resolver from performing new recursive lookups.
+This issue affects BIND 9 versions 9.18.0 through 9.18.50, 9.20.0 through 9.20.27, 9.21.0 through 9.21.25, 9.18.11-S1 through 9.18.50-S1, and 9.20.9-S1 through 9.20.27-S1.",CWE-401,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-102130,PUBLISHED,cisa-cg,Kiteworks Email Protection Gateway Remote Code Execution,"Kiteworks Email Protection Gateway did not sufficiently validate the content of an uploaded backup, and allowed an administrator to influence how the application loaded it. An authenticated administrator could potentially use this to execute arbitrary code on the gateway as the underlying service account.",CWE-94 CWE-434,CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-82754,PUBLISHED,EEF,"ash_authentication_oauth2_server aliases every protocol endpoint under /.well-known, bypassing path-scoped controls","Improper Protection of Alternate Path vulnerability in ash-project ash_authentication_oauth2_server exposes the state-changing OAuth endpoints under an unintended URL prefix, bypassing controls scoped to the canonical prefix.
+
+oauth2_server_protocol_routes/1 in AshAuthentication.Phoenix.Oauth2Server.Router forwards the same ProtocolRouter at both the /oauth prefix and the /.well-known prefix. Phoenix forward strips the matched prefix before dispatch, so the full route table answers under both mounts, and POST /register, POST /token, and POST /revoke are reachable as /.well-known/register, /.well-known/token, and /.well-known/revoke. Edge controls such as WAF rules, rate limits, or authentication exemptions written against the /oauth paths, or that allow-list /.well-known as unauthenticated, do not apply to the alias.
+
+This issue affects ash_authentication_oauth2_server: from 0.1.0 before 0.3.1.",CWE-424,,,,,,,,
+CVE-2026-71887,PUBLISHED,bcorg,OpenPGP data signature accepted from a signing subkey without cross-certification,"In Bouncy Castle for Java before 1.86, the high-level OpenPGP API accepted a data signature made by a signing subkey whose Subkey Binding signature carried no embedded Primary Key Binding (cross-certification) signature, in the case where that binding omits a Key Flags subpacket. RFC 9580 sec. 5.2.1.8 and sec. 10.1.3 require the embedded Primary Key Binding signature on any subkey that can issue signatures; it is the subkey's own statement that it belongs to the primary key it is bound under. OpenPGPCertificate resolved the subkey's key flags two different ways. isSigningKey() goes through getKeyFlags() and getApplyingSubpacket(), which falls back to the primary key's direct-key or primary User ID self-signature when the binding signature omits the subpacket, so the subkey inherited the primary's SIGN_DATA and counted as signing-capable; verifyEmbeddedPrimaryKeyBinding(), which enforces the requirement, reads the binding signature's own hashed subpackets, found no SIGN_DATA there, and returned early as a non-signing key without ever demanding the back signature. The same subkey was therefore signing-capable - so its signatures were attributed to the certificate and OpenPGPSignature.OpenPGPDocumentSignature.isValid() returned true - while being exempt from cross-certification, where GnuPG refuses the identical certificate and message. An attacker needs only the victim's public signing subkey, which is public material: they bind it to their own primary key with a Subkey Binding signature they are able to make, carrying no Key Flags and no embedded Primary Key Binding signature, which they cannot make without the subkey's private key, and a relying party verifying one of the victim's genuinely signed messages against that certificate is told the signature is valid and given the attacker's certificate as its issuer. Because a certificate's User IDs are self-asserted, a verifier that pins on the subkey's fingerprint or key ID while taking the identity from the enclosing certificate reports a real signature under an attacker-chosen identity. This is misattribution of a genuine signature rather than forgery of a new one: no private key is recovered, and the signature must be one the grafted subkey actually made. The low-level PGPSignature / PGPPublicKeyRing API performs no binding checks by design and is unaffected. Key Flags are a statement about the key the carrying signature refers to (RFC 9580 sec. 5.2.3.29), so a subkey no longer inherits them from the certificate-wide signatures of the primary key: a Subkey Binding signature that omits the subpacket now leaves the subkey with no capabilities rather than the primary's, which makes the flags the cross-certification check consults the same flags every other decision consults. Preferences and the other subpackets a direct-key signature carries are inherited as before, and the primary key itself, whose flags legitimately come from its own direct-key or User ID self-signature, is unaffected.",CWE-345 CWE-347,,,,,,,,
+CVE-2026-81802,PUBLISHED,Patchstack,WordPress WpEvently plugin <= 5.6.0 - Insecure Direct Object References (IDOR) vulnerability,Unauthenticated Insecure Direct Object References (IDOR) in WpEvently <= 5.6.0 versions.,CWE-639,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L,,,,,,,
+CVE-2026-79320,PUBLISHED,mitre,,"Stencil core 4.43.5 contains a DOM-based cross-site scripting (XSS) vulnerability in the component runtime. When a downstream application enables the experimental slot fixes option and uses scoped components, assigning a string to the textContent property of such a component's host element causes the value to be parsed as HTML instead of being inserted as text. If an application writes attacker-controlled data to these host elements, the data can be interpreted as markup and script can execute in the context of the application's origin.",,,,,,,,,
+CVE-2026-90457,PUBLISHED,icscert,,"The administrative password is hashed using a comparatively weak, fast algorithm for the credential store backing one authentication path, and the file containing that hash is written with permissions allowing it to be read by any local user. This is inconsistent with a separate, stronger hashing algorithm used for the same password on another authentication path. A party able to read this file, including a local user or a party with access to a configuration backup, could feasibly recover the underlying password through offline computation, compromising the administrative credential across every path that accepts it.",CWE-916,CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-84534,PUBLISHED,apple,,"A path handling issue was addressed with improved validation. This issue is fixed in iOS 26.7 and iPadOS 26.7, iOS 27 and iPadOS 27, macOS Golden Gate 27, macOS Sequoia 15.8, macOS Tahoe 26.7, visionOS 27. Extracting a maliciously crafted archive may allow an attacker to write arbitrary files.",,,,,,,,,
+CVE-2026-78595,PUBLISHED,elastic,Missing Authorization in Kibana Fleet Plugin Leading to Cross-Space Agent Data Disclosure,Missing Authorization in Kibana Leading to Information Disclosure / Missing Authorization (CWE-862) in the Kibana Fleet feature can lead to information disclosure via Privilege Abuse (CAPEC-122). An authenticated user holding read-level Fleet agent privileges in one Kibana space could enumerate agent metadata and access diagnostic content belonging to agents enrolled in other Kibana spaces.,CWE-862,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N,,,,,,,
+CVE-2026-84909,PUBLISHED,Wordfence,Custom Twitter Feeds <= 2.8.0 - Authenticated (Contributor+) Stored Cross-Site Scripting via 'buttoncolor' Shortcode Attribute,"The Custom Twitter Feeds – A Tweets Widget or X Feed Widget plugin for WordPress is vulnerable to Stored Cross-Site Scripting via 'buttoncolor' Shortcode Attribute in all versions up to, and including, 2.8.0 due to insufficient input sanitization and output escaping. This makes it possible for authenticated attackers, with contributor-level access and above, to inject arbitrary web scripts in pages that will execute whenever a user accesses an injected page. This vulnerability is exploitable on common installs where the admin has configured access tokens with zero or multiple legacy feeds, as this causes the ctf_statuses support_legacy_shortcode option to be set to boolean true by default, activating the unfiltered legacy shortcode attribute code path.",CWE-79,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2026-91739,PUBLISHED,Chrome,,Missing authorization in Transactions Platform in Google Chrome prior to 153.0.8010.47 allowed a remote attacker who had compromised the renderer process to spoof UI elements via a crafted HTML page. (Chromium security severity: Medium),CWE-862,,,,,,,,
+CVE-2026-89049,PUBLISHED,AMZN,Server-side request forgery in the Session Manager port forwarding functionality in AWS Systems Manager Agent,"A server-side request forgery issue due to improper validation of equivalent address representations in the port forwarding to remote hosts functionality in Amazon AWS Systems Manager Agent (SSM Agent) before 3.3.4851.0 on all platforms might allow an authenticated remote user to bypass the remote destination denylist and reach link-local endpoints, potentially obtaining the temporary IAM role credentials of a managed instance and acting with that role's permissions from outside the instance, via a crafted destination host value that uses an alternate representation of a denied link-local address.
+
+
+
+To remediate this issue, users should upgrade to version 3.3.4851.0 or later.",CWE-918 CWE-1289,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2026-18320,PUBLISHED,certcc,CVE-2026-18320,"Readwise Reader for Android uses a sanitize-html configuration that permits all attributes on SVG and PATH elements due to a wildcard attribute rule. This configuration fails to remove script-capable attributes such as event handlers (e.g., 'onload', 'onerror'). An attacker could supply a document containing malicious SVG content that survives sanitization and executes script wher rendered in the Reader WebView, resulting in client-side cross-site scripting (XSS).",,,,,,,,,
+CVE-2026-18061,PUBLISHED,AMZN,Improper Restriction of XML External Entity References in AWS Advanced JDBC Wrapper RemoteQueryCachePlugin,"Improper restriction of XML external entity references in the RemoteQueryCachePlugin in AWS Advanced JDBC Wrapper 3.3.0 through 4.2.0 might allow an actor with write access to the shared cache infrastructure to disclose sensitive files from application hosts that read cached query results, including stored database and IAM role credentials, via crafted XML data in a cached column value.
+
+
+
+To remediate this issue, users should upgrade to version 4.3.0 or later.",CWE-611,CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:L,,,,,,,
+CVE-2026-6171,PUBLISHED,Wordfence,Bold Page Builder <= 5.7.2 - Authenticated (Contributor+) Stored Cross-Site Scripting via 'target' Shortcode Attribute,"The Bold Page Builder plugin for WordPress is vulnerable to Stored Cross-Site Scripting via the 'target' parameter of the plugin's bt_bb_icon shortcode in all versions up to, and including, 5.7.2 due to insufficient input sanitization and output escaping on user-supplied attributes. This makes it possible for authenticated attackers, with Contributor-level access and above, to inject arbitrary web scripts in pages that will execute whenever a user accesses an injected page.",CWE-79,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2026-80161,PUBLISHED,adobe,Acrobat Reader | Access of Resource Using Incompatible Type ('Type Confusion') (CWE-843),Acrobat Reader is affected by an Access of Resource Using Incompatible Type ('Type Confusion') vulnerability that could result in arbitrary code execution in the context of the current user. An attacker could exploit this vulnerability to execute arbitrary code. Exploitation of this issue requires user interaction in that a victim must open a malicious file.,CWE-843,CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-80359,PUBLISHED,dell,,"Dell Boot Optimized Server Storage (BOSS), versions prior to 2.2.13.2038, contains an On-Chip Debug and Test Interface With Improper Access Control vulnerability in the SMCU on 17G BOSS-N1 controllers. An unauthenticated attacker with physical access could potentially exploit this vulnerability, leading to Unauthorized access.",CWE-1191,CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-85528,PUBLISHED,SNOWFLAKE,Snowflake JDBC Driver auto-configuration account validation permits credential redirection,"Improper input validation of the auto-configuration account identifier in Snowflake JDBC Driver versions 4.2.0 through 4.3.3 allowed a credential-bearing login request to be redirected to an attacker-selected HTTPS endpoint. An attacker able to control the account value could cause the driver to transmit a reusable login credential to a host of their choosing and replay it to obtain the privileges granted to that credential. Successful exploitation requires an application using jdbc:snowflake:auto with a connections.toml section that omits an explicit host and a lower-trust principal able to set the account value; ordinary JDBC URLs are unaffected. The fix is available in Snowflake JDBC Driver version 4.3.4, including the snowflake-jdbc-fips and snowflake-jdbc-thin. Users must manually upgrade.",CWE-918 CWE-20,CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-92029,PUBLISHED,mozilla,Use-after-free in the SVG component,"Use-after-free in the SVG component. This vulnerability was fixed in Firefox 156, Firefox ESR 115.41, Firefox ESR 140.16, Firefox ESR 153.3, Thunderbird 156, Thunderbird 140.16, and Thunderbird 153.3.",,,,,,,,,
+CVE-2026-7848,PUBLISHED,CERT-PL,SQL Injection in Alior Bank raty PrestaShop module,"Alior Bank PrestaShop module ""raty"" for commercial partners is vulnerable to SQL Injection in the ""hookActionObjectProductUpdateBefore"", ""hookActionObjectCategoryUpdateBefore"", and ""hookActionObjectCategoryAddAfter"" hook methods. The module inserts values of the POST parameters ""alior_product_promotion"",  ""alior_category_promotion"" and ""alior_category_enabled"" directly into SQL UPDATE queries without any sanitization or validation. An attacker with access to the product or category add/edit functionality in the PrestaShop backoffice can inject arbitrary SQL, potentially allowing unauthorized access to and modification of database contents. This issue was fixed in versions: 9.0.7 and 8.1.11",CWE-89,,,,,,,,
+CVE-2026-90906,PUBLISHED,Joomla,"Joomla! Core - [20260901] - XSS in HTMLHelper::link method in Joomla 1.5.0-5.4.8, 6.0.0-6.1.3","Joomla! Core - [20260901] - XSS in HTMLHelper::link method in Joomla 1.5.0-5.4.8, 6.0.0-6.1.3 - Lack of escaping leads to XSS vulnerabilities in the link method of the HTML Helper.",CWE-79,,,,,,,,
+CVE-2026-65344,PUBLISHED,apple,,"An out-of-bounds write issue was addressed with improved bounds checking. This issue is fixed in iOS 26.7 and iPadOS 26.7, iOS 27 and iPadOS 27, macOS Golden Gate 27, macOS Sequoia 15.8, macOS Tahoe 26.7, tvOS 27, visionOS 27. Processing a maliciously crafted video file may lead to unexpected app termination.",,,,,,,,,
+CVE-2026-84285,PUBLISHED,3DS,OS Command Injection vulnerability affecting Tuleap Enterprise Edition from 17.3 through 17.5,An OS Command Injection vulnerability affecting Tuleap Enterprise Edition from 17.3 through 17.5 could allow an attacker to execute arbitrary commands on the server.,CWE-78,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-81635,PUBLISHED,jpcert,,"A cross-site scripting vulnerability exists in SHIRASAGI, which may allow an attacker to execute an arbitrary script in the web browser of a user who accesses a website using the affected product.",CWE-79,CVSS:3.0/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2026-93761,PUBLISHED,mongodb,Denial of service via unbounded regex matching in Mongoid's in-memory query matcher,An inefficient regular expression complexity issue in the in-memory query evaluation component of the Mongoid library may allow an unauthenticated party to cause excessive processing within an embedding application process. Applications that place user-supplied text into a pattern-matching query condition on an embedded association may become unresponsive.,CWE-1333,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-95697,PUBLISHED,CIRCL,MISP: Insufficient Authorization Allows Sharing Group Editors to Overwrite Organization Metadata,"MISP contains an authorization flaw in the Organisation model's captureOrg method. When the $force parameter is set to true, the method unconditionally overwrites organization metadata fields without verifying that the invoking user holds sufficient privileges. A user with a sharing group (SG) editor role can trigger this code path, allowing them to modify organization metadata that should be restricted to site administrators or users with sync permissions.
+
+According to the commit message, this could lead to blueprint-based sharing group manipulation, meaning an attacker with SG editor access could alter organizational attributes in ways that influence how sharing groups and blueprints behave across the MISP instance. 
+
+The vulnerability requires an authenticated user with at least SG editor privileges and network access to the MISP web interface. The impact is primarily on the integrity of organization records and, potentially, on the integrity of sharing group configurations derived from those records.",CWE-862,,,,,,,,
+CVE-2026-95302,PUBLISHED,Chrome,,Incorrect authorization in WebAPKs in Google Chrome on on Android prior to 154.0.8037.57 allowed a local attacker to obtain cross-origin data via a co-installed app. (Chromium security severity: Medium),CWE-863,,,,,,,,
+CVE-2026-20300,PUBLISHED,cisco,Cisco Identity Services Engine SQL Injection Vulnerability,"A vulnerability in Cisco ISE could allow an authenticated, remote attacker to conduct SQL injection attacks on an affected device. To exploit this vulnerability, the attacker must have at least low-privileged administrative credentials.
+
+This vulnerability is due to improper validation of user-supplied input. An attacker could exploit this vulnerability by sending a crafted request to an affected device. A successful exploit could allow the attacker to read or modify data in the underlying database.",CWE-89,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:N,,,,,,,
+CVE-2026-91795,PUBLISHED,Foxit,Foxit PDF Editor/Reader FileOpen Uninitialized Variable Remote Code Execution Vulnerability,"Foxit PDF Editor/Reader's FileOpen plugin did not adequately validate certain encryption metadata in specially crafted PDF files. This could leave an internal pointer in an invalid state, resulting in chained read and write access violations and potentially enabling arbitrary code execution.",CWE-822,CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-102379,PUBLISHED,Patchstack,WordPress BuildKit – Product Builder for WooCommerce – Custom PC Builder plugin <= 1.0.28 - SQL Injection vulnerability,Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') vulnerability in VillaTheme BuildKit – Product Builder for WooCommerce – Custom PC Builder woo-product-builder allows Blind SQL Injection.This issue affects BuildKit – Product Builder for WooCommerce – Custom PC Builder: from n/a through 1.0.28.,CWE-89,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:L,,,,,,,
+CVE-2026-96431,PUBLISHED,ZUSO ART,Flowring Agentflow 4.0 - Unrestricted Upload of File with Dangerous Type,"Unrestricted Upload of File with Dangerous Type in the
+/WebAgenda/download/uploadFile.jsp API endpoint of Flowring Agentflow 4.0 version
+before 2023/03/24 allows remote authenticated users to execute arbitrary
+system commands via a malicious file.",CWE-434,,,,,,,,
+CVE-2026-85541,PUBLISHED,twcert,Interinfo｜DreamMaker - Reflected Cross-site Scripting,DreamMaker developed by Interinfo has a Reflected Cross-site Scripting vulnerability. Authenticated remote attackers can execute arbitrary JavaScript codes in user's browser via a malicious website.,CWE-79,CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N,,,,,,,
+CVE-2021-47996,REJECTED,VulnCheck,Nokogiri before 1.11.4 Multiple Vulnerabilities via libxml2,"Nokogiri before 1.11.4 (CRuby implementation only, when the packaged/vendored libxml2 is used) bundles libxml2 2.9.10, which is affected by multiple vulnerabilities addressed in libxml2 2.9.12, including a memory leak in xmlSchemaValidateStream (CVE-2019-20388), a global buffer over-read in xmlEncodeEntitiesInternal (CVE-2020-24977), a heap-based buffer overflow (CVE-2021-3517), and an out-of-bounds read (CVE-2021-3518). Processing crafted XML documents may lead to denial of service, information disclosure, or memory corruption.",CWE-119,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,This CVE ID has been rejected as a duplicate.,,,,,,
+CVE-2026-102718,PUBLISHED,eclipse,,"hey,
+
+
+
+`_nx_snmp_utility_object_id_get` in the NetX Duo SNMP addon does not validate the claimed OID data length against the actual buffer size when the OID uses BER multibyte length encoding, so a remote attacker can send a crafted SNMP packet with a multibyte OID length larger than the available buffer, causing the parser to read past the packet buffer boundary into adjacent heap memory. the OOB bytes are decoded as OID component values and written into the agents internal OID string buffer, corrupting agent state. on systems with memory protection the OOB read poses the risk of crashing the SNMP agent thread, causing denial of service. on bare metal embedded systems without memory protection the read silently succeeds and corrupts the agents internal state with heap data.",CWE-125,,,,,,,,
+CVE-2026-44756,PUBLISHED,sap,Memory Corruption vulnerability in SAP Extended Passport (EPP) Processing,"A memory safety vulnerability exists in the Extended Passport Protocol (EPP) processing library. Under specific conditions, an unauthenticated attacker could exploit a crafted network request containing a malformed EPP header, potentially resulting in undefined behavior and abnormal program termination. Successful exploitation may have a high impact on the confidentiality, integrity, and availability of the application.",CWE-120,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2026-97288,PUBLISHED,Patchstack,WordPress OAuth Server plugin <= 4.5.1 - Cross Site Scripting (XSS) vulnerability,Contributor Cross Site Scripting (XSS) in OAuth Server <= 4.5.1 versions.,CWE-79,CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:L,,,,,,,
+CVE-2026-82186,PUBLISHED,WPScan,WPLP Cookie Consent < 4.4.2 - Admin+ SQLi via 'offset' Parameter,"The WPLP Cookie Consent  WordPress plugin before 4.4.2 does not properly validate a pagination parameter before using it in a SQL query, allowing users with administrator privileges to perform SQL injection attacks.",,,,,,,,,
+CVE-2026-31404,REJECTED,Linux,NFSD: Defer sub-object cleanup in export put callbacks,"In the Linux kernel, the following vulnerability has been resolved:
+
+NFSD: Defer sub-object cleanup in export put callbacks
+
+svc_export_put() calls path_put() and auth_domain_put() immediately
+when the last reference drops, before the RCU grace period. RCU
+readers in e_show() and c_show() access both ex_path (via
+seq_path/d_path) and ex_client->name (via seq_escape) without
+holding a reference. If cache_clean removes the entry and drops the
+last reference concurrently, the sub-objects are freed while still
+in use, producing a NULL pointer dereference in d_path.
+
+Commit 2530766492ec (""nfsd: fix UAF when access ex_uuid or
+ex_stats"") moved kfree of ex_uuid and ex_stats into the
+call_rcu callback, but left path_put() and auth_domain_put() running
+before the grace period because both may sleep and call_rcu
+callbacks execute in softirq context.
+
+Replace call_rcu/kfree_rcu with queue_rcu_work(), which defers the
+callback until after the RCU grace period and executes it in process
+context where sleeping is permitted. This allows path_put() and
+auth_domain_put() to be moved into the deferred callback alongside
+the other resource releases. Apply the same fix to expkey_put(),
+which has the identical pattern with ek_path and ek_client.
+
+A dedicated workqueue scopes the shutdown drain to only NFSD
+export release work items; flushing the shared
+system_unbound_wq would stall on unrelated work from other
+subsystems. nfsd_export_shutdown() uses rcu_barrier() followed
+by flush_workqueue() to ensure all deferred release callbacks
+complete before the export caches are destroyed.
+
+Reviwed-by: Jeff Layton <jlayton@kernel.org>",,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-87828,PUBLISHED,WPScan,Seraphinite Accelerator < 2.29.24 - Subscriber+ DoS via seraph_accel_State Update,"The Seraphinite Accelerator WordPress plugin before 2.29.24 does not perform a capability check on one of its state-update AJAX actions, allowing authenticated users such as subscribers to write a malformed value that causes an uncaught error on every subsequent admin page load, making the entire admin area inaccessible to all administrators (denial of service).",,,,,,,,,
+CVE-2026-91796,PUBLISHED,Foxit,Foxit PDF Editor/Reader importIcon NTLM Response Information Disclosure Vulnerability,"The interface of Foxit PDF Editor/Reader lacks the permission verification for secure reading mode, which allows specially crafted PDFs to trigger external SMB authentication without any security prompts and thereby leak the hash of the user's credentials.",CWE-693,CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:H,,,,,,,
+CVE-2026-92057,PUBLISHED,mozilla,Mitigation bypass in the Enterprise Policies component,"Mitigation bypass in the Enterprise Policies component. This vulnerability was fixed in Firefox 156, Firefox ESR 153.3, Thunderbird 156, and Thunderbird 153.3.",,,,,,,,,
+CVE-2026-9032,PUBLISHED,TPLink,Unauthenticated Onboarding Connect NULL Pointer Dereference Denial of Service Vulnerability in TP-Link Tapo C120 & C200,"Tapo C120 v1 and C200 v5
+contain a NULL pointer dereference in the HTTPS onboarding connect request parser.  The interface is reachable without
+authentication after initial setup and does not validate that a password field
+is present for certain authentication and encryption parameter combinations,
+allowing a malformed request from the same local network to crash the HTTPS service
+
+
+
+
+
+
+
+
+
+
+ Successful exploitation may
+temporarily make HTTPS management functions unavailable. Repeated malformed
+requests may sustain the denial-of-service condition, and recovery may in some
+cases require a device reboot.",CWE-476,,,,,,,,
+CVE-2026-102005,PUBLISHED,WindRiver,VxWorks Memory Allocation,"Wind River VxWorks 7 24.03 through 26.03, a memory leak occurs under specific, non-default configuration states when processing specific service routines, causing the system to terminate operations before releasing allocated memory pools. Fixed in VxWorks 7 26.09",CWE-401,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-91181,PUBLISHED,Mattermost,Data Retention Teams Endpoint Leaks Private Team Invite ID,"Mattermost versions 11.9.x <= 11.9.0, 11.8.x <= 11.8.4, 11.7.x <= 11.7.7, 10.11.x <= 10.11.22 Fail to sanitize Team objects returned by the data retention teams endpoint which allows an authenticated user holding only the read-only Data Retention Policy permission to obtain a private team's secret invite_id and email, and use it to join the team without authorization, via GET /api/v4/data_retention/policies/{policy_id}/teams.. Mattermost Advisory ID: MMSA-2026-00702",CWE-863,CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:N,,,,,,,
+CVE-2026-73460,PUBLISHED,Arista,Security Advisory 0160,"On affected platforms running Arista EOS with IS-IS graceful restart enabled, an unauthenticated attacker who can inject a malformed IS-IS LSP PDU packet can cause the IS-IS graceful restart procedure to terminate prematurely. This may result in traffic loss following a restart event.",CWE-863,CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:C/C:N/I:N/A:H,,,,,,,
+CVE-2026-21833,PUBLISHED,HCL,"HCL AION is susceptible to a Missing ""Content-Security-Policy"" header Vulnerability (CVE-2026-21833)","HCL AION is affected by a vulnerability in which the Content-Security-Policy (CSP) HTTP response header is not configured. CSP helps prevent attacks such as Cross-Site Scripting (XSS) by restricting the sources from which scripts, styles, and other resources can be loaded. The absence of this header may reduce the effectiveness of browser-based security controls, potentially resulting in unintended behavior or negative security impacts under certain conditions.",CWE-1032,CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N,,,,,,,
+CVE-2026-28642,PUBLISHED,google_android,,"In executeRequest of ActivityStarter.java, there is a possible background activity launch due to a logic error in the code. This could lead to local escalation of privilege with no additional execution privileges needed. User interaction is not needed for exploitation.",,,,,,,,,
+CVE-2026-79603,PUBLISHED,XEN,Unconditionally do TLB flushing ahead of page scrubbing,"x86 PV guests can free memory pages while still keeping a stale TLB entry
+pointing to them.  A TLB flush is only issued by Xen (if needed) when the
+page is re-used.  Since it's possible for the page to be scrubbed ahead of
+the TLB flush, there's a window where a PV guest can modify an already
+scrubbed page.",,,,,,,,,
+CVE-2026-90971,PUBLISHED,DEVOLUTIONS,,Server-Side Request Forgery (SSRF) in the VMware synchronization feature in Devolutions Server 2026.2.16 and earlier allows a low-privileged authenticated user to obtain other users' credentials and reach internal or cloud-metadata network endpoints via a crafted connection definition submitted for datacenter discovery.,CWE-863,,,,,,,,
+CVE-2026-87747,PUBLISHED,twcert,Ragic｜Enterprise Cloud Database - Arbitrary File Read,The Enterprise Cloud Database developed by Ragic has an Arbitrary File Read vulnerability. Privileged remote attackers can exploit Relative Path Traversal to download arbitrary system files.,CWE-23,CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:N/A:N,,,,,,,
+CVE-2026-20352,PUBLISHED,cisco,Cisco Identity Services Engine RADIUS Denial of Service Vulnerability,"A vulnerability in the RADIUS feature of Cisco Identity Services Engine (ISE) could allow an unauthenticated, remote attacker to cause a denial of service (DoS) condition on an affected device.
+
+This vulnerability is due to improper handling of certain RADIUS requests. An attacker could exploit this vulnerability by sending a crafted RADIUS request directly to an affected device. A successful exploit could allow the attacker to cause the ISE node to become unavailable. For single node deployments in that condition, endpoints that have not already authenticated would be unable to access the network until the&nbsp;node comes back up on its own.",CWE-119,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:H,,,,,,,
+CVE-2026-15027,PUBLISHED,twcert,Changing｜CGServiSign - OS Command Injection,"CGServiSign developed by Changing has a OS Command Injection vulnerability. Unauthenticated remote attackers can induce victims to visit a malicious web page and inject arbitrary OS commands through the local service interface, resulting in command execution on the victim's local computer.",CWE-78,CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-92039,PUBLISHED,mozilla,Mitigation bypass in the DOM: Notifications component,"Mitigation bypass in the DOM: Notifications component. This vulnerability was fixed in Firefox 156, Firefox ESR 153.3, Thunderbird 156, and Thunderbird 153.3.",,,,,,,,,
+CVE-2026-81900,PUBLISHED,ConcreteCMS,Concrete CMS before 9.5.3 is vulnerable to Stored XSS in the YouTube block (vWidth/vHeight),"Concrete CMS before 9.5.3 applied only trim() to the YouTube block's stored width and height values and printed them into iframe HTML attributes without escaping or integer casting, resulting in stored cross-site scripting. A user with edit_block permission could inject an event handler that executed script for visitors rendering the page, acting with administrative privileges where the victim was an administrator. The Concrete CMS security team gave this vulnerability a CVSS v4.0 score of 7.3 with vector CVSS:4.0/AV:N/AC:L/AT:P/PR:H/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N. Thanks sh4d0byss for reporting.",CWE-79,,,,,,,,
+CVE-2026-16005,PUBLISHED,ASUS,,"Release of Invalid Pointer or Reference in Armoury Crate driver allows a local user to free arbitrary memory via a crafted IOCTL request by bypassing the driver's verification, which can corrupt data structures and cause a system crash (BSOD).Refer to the '
+Security Update for Armoury Crate App  ' section on the ASUS Security Advisory for more information.",CWE-763,,,,,,,,
+CVE-2026-93832,PUBLISHED,lenovo,,"A component of one of the Motorola system applications was
+exported without permission, allowing for the revocation of runtime permissions
+from other apps.",CWE-862,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:L,,,,,,,
+CVE-2026-101322,PUBLISHED,eclipse,,"In Eclipse BaSyx AAS Web UI versions v2-241220 through releases before v2-260924, the shared request handler attached the selected infrastructure's `Authorization` header to outgoing requests without checking the destination origin. In deployments using authentication, an attacker could induce a user to open a crafted Web UI link whose `aas` or `path` query parameter points to an attacker-controlled endpoint. The user's browser would then send the configured Basic Authentication credentials, Bearer token, or an available OAuth2 access token to that endpoint. The attacker could reuse the disclosed credential to access protected AAS services with the victim's privileges. The issue is fixed in v2-260924.",CWE-201,,,,,,,,
+CVE-2026-78252,PUBLISHED,GitLab,Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting') in GitLab,"GitLab has remediated an issue in GitLab CE/EE affecting all versions from 15.3 before 19.1.8, 19.2 before 19.2.6, and 19.3 before 19.3.2 that, under certain conditions, an authenticated user could have induced a targeted user to perform unintended state-changing HTTP requests due to improper sanitization of user-controlled data in the Markdown JSON table renderer.",CWE-79,CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:H/A:L,,,,,,,
+CVE-2026-6086,PUBLISHED,INCIBE,Stored Cross-Site Scripting in StockAgile by Novadigits technologies,"Stored Cross-Site Scripting (XSS) vulnerability in StockAgile API and management panel. The vulnerability is present on the server side in REST endpoint '/inventory/configuration/serial-number-types' that allow the injection and persistence of malicious JavaScript code through parameters such as ‘code’, ‘name’, and other text fields. The scripts that are entered are not filtered or validated correctly before being displayed on the web panel that authenticated users can access. Exploiting this vulnerability could allow a remote, previously authenticated attacker to execute arbitrary JavaScript code.",CWE-79,,,,,,,,
+CVE-2026-86478,PUBLISHED,JetBrains,,"In JetBrains YouTrack before 2025.3.161254, 
+2026.1.14042 improper authentication in YouTrack Helpdesk allowed unauthenticated account takeover via a self-asserted email address",CWE-290,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-59668,PUBLISHED,INCIBE,Multiple vulnerabilities in the Repasat application,Cross-Site Scripting vulnerability in the Repasat application. Successful exploitation of this vulnerability could allow an attacker to trick a user into executing arbitrary code in the victim’s browser. The “nomTamano” parameter is affected – endpoint “/es/companysizebills/store”.,CWE-79,,,,,,,,
+CVE-2026-102114,PUBLISHED,cisa-cg,Kiteworks Core OS Command Injection,A command injection vulnerability in Kiteworks could allow a high-privileged authenticated administrator to execute arbitrary operating-system commands as root on the affected appliance node. Successful exploitation requires an administrative account with elevated privileges.,CWE-78,CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-94684,REJECTED,Patchstack,WordPress Ocean Extra plugin <= 2.6.1 - Cross Site Scripting (XSS) vulnerability,Contributor Cross Site Scripting (XSS) in Ocean Extra <= 2.6.1 versions.,CWE-79,CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:L,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority. False positive detection.,,,,,,
+CVE-2026-14441,PUBLISHED,brocade,Logic flaw in SANnav Java cache key handling object comparison handling,A logic flaw in Java cache key handling object comparison handling could lead to improper identifier resolution when processing specific user account structures. The issue has been remediated by updating the internal comparison routines to ensure accurate object evaluation and prevent potential identity mismatch conditions.,CWE-1025,,,,,,,,
+CVE-2026-19201,PUBLISHED,Google,Denial of Service via Unbounded Recursion in go-attestation Windows SIPA Parser,"An uncontrolled recursion vulnerability in the Windows SIPA event log parser of Google go-attestation versions up to and including 0.6.1 allows an attacker to cause a denial of service (DoS). The (*WinEvents).readELAMAggregation function recurses for every nested elamAggregation sub-event without enforcing a maximum recursion depth limit, while the size guard is bypassed on recursive execution paths. By submitting a crafted Windows event log containing deeply nested elamAggregation headers, an attacker can exhaust the goroutine call stack, triggering an unrecoverable fatal runtime error (stack overflow) that immediately crashes the verifier application.",CWE-674,,,,,,,,
+CVE-2026-93769,PUBLISHED,Fluid Attacks,HumHub 1.18.5 - Stored XSS in Profile Field Category title via HForm#renderForm leading to System Administrator account takeover,"HumHub 1.18.5 is affected by a stored cross-site scripting (XSS) vulnerability that allows any user holding the delegated, non-system-administrator Manage Users permission (admin_manage_users) to inject persistent HTML/JavaScript into a Profile Field Category title.",CWE-79,,,,,,,,
+CVE-2026-81923,PUBLISHED,ConcreteCMS,Concrete CMS below 9.5.3 is missing authorization in the SEO Bulk Update Meta Tags editor,"In Concrete CMS before 9.5.3, the SEO Bulk Update Meta Tags editor did not check per-page edit permissions before saving. The saveRecord() action validated the per-page CSRF token but never called canEditPageProperties() for the target page, so a user who was granted access to the bulk SEO tool and could view (but not edit) a given page was able to change that page's meta title, meta description, and URL handle outside their edit scope, tampering with the presentation and live URLs of otherwise protected content. The Concrete CMS security team gave this vulnerability a CVSS v4.0 score of 2.1 with vector CVSS:4.0/AV:N/AC:L/AT:P/PR:H/UI:N/VC:N/VI:L/VA:N/SC:N/SI:N/SA:N. Thanks Andrew Gonzalez for reporting.",CWE-862,,,,,,,,
+CVE-2026-96418,PUBLISHED,GitLab,Loop with Unreachable Exit Condition ('Infinite Loop') in Wireshark,TIFF protocol dissector infinite loop in 4.6.0 to 4.6.8 and 4.4.0 to 4.4.18 allows denial of service,CWE-835,CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H,,,,,,,
+CVE-2026-102122,PUBLISHED,cisa-cg,Kiteworks Core Incorrect Authorization,"Kiteworks did not correctly enforce which roles a shared folder's manager was permitted to assign. In a default configuration, an authenticated user holding the Manager role on a folder could grant the Owner role to themselves or to other members of that folder.",CWE-863,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N,,,,,,,
+CVE-2026-92905,PUBLISHED,Zohocorp,Denial of Service Vulnerability,ZohoCorp ManageEngine EventLog Analyzer and Log360 before build 13071 were vulnerable to a DoS vulnerability that allowed attackers to crash the log collector using malformed syslog packets.,CWE-248,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L,,,,,,,
+CVE-2026-86554,PUBLISHED,zte,Email enumeration and account ID leakage vulnerabilities in ZTE SmartLife APP,"SmartLife app dynamically generates brand‑new SmartLife application authentication parameters within its runtime process. With the obtained SmartLife application authentication parameters, attackers can directly invoke the backend interface /account/verify.serv to determine whether a target email address is registered for a SmartLife account. If the account exists, the real backend account ID can also be retrieved.",CWE-269,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N,,,,,,,
+CVE-2026-18413,PUBLISHED,zephyr,Out-of-bounds write in the NXP MCUX LPADC ADC driver due to missing adc_sequence buffer size validation,"The ADC API requires each driver to reject a sampling sequence whose destination buffer is too small: the buffer_size field of struct adc_sequence in include/zephyr/drivers/adc.h documents that ""the driver must ensure that samples are not written beyond the limit and it must return an error if the buffer turns out to be not large enough"". The NXP MCUX LPADC driver did not honour that contract. mcux_lpadc_start_read() in drivers/adc/adc_mcux_lpadc.c performed no buffer-size check at all before assigning data->buffer = sequence->buffer. Each completed conversion then stores one 16-bit sample per enabled channel per sampling round through an unbounded *data->buffer++: in mcux_lpadc_isr() for interrupt-driven builds, and in mcux_lpadc_dma_callback() for DMA-driven builds on releases that have the DMA path. A sequence selecting two channels with a two-byte buffer, for example, has its second sample written past the end of the buffer.
+
+On a build with CONFIG_USERSPACE, adc_read() and adc_read_async() are system calls. The handler in drivers/adc/adc_handlers.c copies the sequence in from user memory, verifies only that [buffer, buffer + buffer_size) is writable by the calling thread, and rejects a user-supplied options->callback; it deliberately leaves the size arithmetic to the driver. A user-mode thread that has been granted access to an LPADC device object therefore fully controls channels, buffer, buffer_size and options->extra_samplings, and can request far more samples than its buffer can hold: up to channels * 65536 samples into a two-byte buffer, since the sample pointer is only rewound on a repeat sampling, never on the extra samplings of a sequence.
+
+The resulting stores are performed by the driver in kernel mode (in the ADC interrupt handler or the DMA completion callback), where the MPU does not restrict the thread's memory domain, so the write walks linearly out of the user partition and into adjacent memory such as other partitions, kernel data or thread stacks. The impact is kernel-memory corruption of attacker-chosen length at an attacker-chosen offset, a plausible privilege-escalation and denial-of-service primitive from an unprivileged user-mode thread. Builds without CONFIG_USERSPACE are affected only as a caller-side robustness defect, since the application itself supplies the buffer.
+
+The fix calls the new shared helper adc_sequence_validate_buffer() in drivers/adc/adc_common.c from mcux_lpadc_start_read(). The helper computes active_channels  sizeof(uint16_t)  (1 + extra_samplings) and returns -ENOMEM before any sampling is started.",CWE-787,CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,,,,,,,
+CVE-2026-20330,PUBLISHED,cisco,"Cisco Secure Adaptive Security Appliance Software, Secure Firewall Threat Defense Software and Secure Firewall Management Center Software Hardening Release - Improper Neutralization Vulnerabilities","As part of Cisco's ongoing commitment to proactive security and product quality, the Cisco Secure Adaptive Security Appliance Software, Cisco Secure Firewall Threat Defense Software and Cisco Secure Firewall Management Center Software engineering team has conducted a comprehensive internal security review. This review resulted in a software hardening release that addresses multiple internally discovered vulnerabilities. &nbsp;
+
+The vulnerabilities tracked by CVE-2026-20330 are related to improper neutralization issues that are grouped under the Common Weakness Enumeration (CWE) Pillar CWE-707.",CWE-707,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H,,,,,,,
+CVE-2026-89307,PUBLISHED,ENISA,HTML injection allows open redirection in WordPress theme design-scuole-wordpress-theme,"The ""Firma Circolare"" feature in the ""Design Scuole Italia"" WordPress theme allows an authenticated attacker to inject arbitrary HTML via the sign parameter, enabling forced redirection of visiting users to an attacker-controlled URL (Stored HTML Injection / Open Redirect).",CWE-601,,,,,,,,
+CVE-2026-9375,REJECTED,@huntr_ai,Decompression Bomb Bypass via Negative max_length in Streaming API in urllib3,"urllib3 version 2.6.3 is vulnerable to a decompression bomb bypass in its streaming API (`preload_content=False`) when using Brotli support. The issue arises due to three independent code paths in `response.py` that bypass the `max_length` protection introduced in version 2.6.0 to mitigate CVE-2025-66471. Specifically, negative `max_length` values can be produced due to buffer arithmetic in `read()`, `flush_decoder` unconditionally overrides `max_length` to `-1`, and `_flush_decoder()` passes no limit at all, defaulting to unlimited decompression. This allows a malicious HTTP server to trigger an out-of-memory (OOM) condition by decompressing large payloads into memory, leading to a denial of service (DoS). The vulnerability affects urllib3 2.6.3 and Brotli 1.2.0 and impacts applications and libraries using `requests` or `urllib3` to stream content from untrusted sources.",CWE-400,CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-90310,REJECTED,Linux,xen/xenbus: check otherend_id only after it has been initialized,"In the Linux kernel, the following vulnerability has been resolved:
+
+xen/xenbus: check otherend_id only after it has been initialized
+
+When device just got initialized (for example on module load), the
+otherend_id field is initialized only after
+xenbus_read_otherend_details() gets called. If xenstore watch triggers
+xenbus_dev_changed() before that, it might consider still zeroed
+otherend_id field (not matching actual xenstore content) as a sign of
+device state reset. It can happen because xenstore watch are handled in
+another thread (xenwatch), which can run in parallel to the initial
+device probe running at module load. In that case, it would call
+device_unregister(), which would deadlock against device probe from
+module init.
+
+Fix this by considering dev->otherend_id change only after dev->otherend
+is set (which happen after otherend_id is initialized).",,,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-73188,REJECTED,Patchstack,WordPress KiviCare plugin <= 4.5.1 - Sensitive Data Exposure vulnerability,Unauthenticated Sensitive Data Exposure in KiviCare <= 4.5.1 versions.,CWE-288,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority. Duplicate to CVE-2026-13610.,,,,,,
+CVE-2022-48877,REJECTED,Linux,f2fs: let's avoid panic if extent_tree is not created,"In the Linux kernel, the following vulnerability has been resolved:
+
+f2fs: let's avoid panic if extent_tree is not created
+
+This patch avoids the below panic.
+
+pc : __lookup_extent_tree+0xd8/0x760
+lr : f2fs_do_write_data_page+0x104/0x87c
+sp : ffffffc010cbb3c0
+x29: ffffffc010cbb3e0 x28: 0000000000000000
+x27: ffffff8803e7f020 x26: ffffff8803e7ed40
+x25: ffffff8803e7f020 x24: ffffffc010cbb460
+x23: ffffffc010cbb480 x22: 0000000000000000
+x21: 0000000000000000 x20: ffffffff22e90900
+x19: 0000000000000000 x18: ffffffc010c5d080
+x17: 0000000000000000 x16: 0000000000000020
+x15: ffffffdb1acdbb88 x14: ffffff888759e2b0
+x13: 0000000000000000 x12: ffffff802da49000
+x11: 000000000a001200 x10: ffffff8803e7ed40
+x9 : ffffff8023195800 x8 : ffffff802da49078
+x7 : 0000000000000001 x6 : 0000000000000000
+x5 : 0000000000000006 x4 : ffffffc010cbba28
+x3 : 0000000000000000 x2 : ffffffc010cbb480
+x1 : 0000000000000000 x0 : ffffff8803e7ed40
+Call trace:
+ __lookup_extent_tree+0xd8/0x760
+ f2fs_do_write_data_page+0x104/0x87c
+ f2fs_write_single_data_page+0x420/0xb60
+ f2fs_write_cache_pages+0x418/0xb1c
+ __f2fs_write_data_pages+0x428/0x58c
+ f2fs_write_data_pages+0x30/0x40
+ do_writepages+0x88/0x190
+ __writeback_single_inode+0x48/0x448
+ writeback_sb_inodes+0x468/0x9e8
+ __writeback_inodes_wb+0xb8/0x2a4
+ wb_writeback+0x33c/0x740
+ wb_do_writeback+0x2b4/0x400
+ wb_workfn+0xe4/0x34c
+ process_one_work+0x24c/0x5bc
+ worker_thread+0x3e8/0xa50
+ kthread+0x150/0x1b4",,,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2022-50999,REJECTED,VulnCheck,Nokogiri before 1.13.5 Integer Overflow via libxml2,"Nokogiri versions before 1.13.5 contain an integer overflow vulnerability in packaged libxml2 buffer handling functions that allows attackers to cause out-of-bounds memory writes. Attackers can exploit this by crafting multi-gigabyte XML files to trigger buffer overflows resulting in information disclosure, data modification, or denial of service.",CWE-119,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:H,This CVE ID has been rejected as a duplicate.,,,,,,
+CVE-2026-56699,REJECTED,VulnCheck,Wazuh Manager - NDJSON Injection in inventory_sync via Agent-Controlled DataValue.index,"Wazuh Manager before 5.0.0-beta3 fails to escape the DataValue.index field when constructing OpenSearch bulk requests, allowing enrolled agents to inject arbitrary NDJSON operations. Attackers can smuggle delete, index, or update operations into bulk requests executed under the manager's admin credentials, enabling document deletion, alert tampering, and cross-agent SIEM state manipulation.",CWE-74,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H,"This CVE ID has been rejected or withdrawn by its CVE Numbering Authority. Per Wazuh's Security Policy, vulnerabilities affecting only non-GA versions are not eligible for a CVE ID.",,,,,,
+CVE-2026-73189,REJECTED,Patchstack,WordPress WP Crowdfunding plugin < 2.2.1 - Insecure Direct Object References (IDOR) vulnerability,Subscriber Insecure Direct Object References (IDOR) in WP Crowdfunding < 2.2.1 versions.,CWE-639,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority. Duplicate to CVE-2026-14858,,,,,,
+CVE-2026-73392,REJECTED,Patchstack,WordPress Super Store Finder plugin <= 7.8 - SQL Injection vulnerability,Unauthenticated SQL Injection in Super Store Finder <= 7.8 versions.,CWE-89,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:L,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority. Duplicate to CVE-2026-12965.,,,,,,
+CVE-2022-50998,REJECTED,VulnCheck,Nokogiri before 1.13.9 Multiple Vulnerabilities via libxml2,"Nokogiri before 1.13.9 (CRuby implementation using packaged libraries) bundles libxml2 v2.9.14, which is affected by CVE-2022-40304 (data corruption / double-free from an entity reference cycle when entity content is allocated from a dict) and CVE-2022-40303 (integer overflows when parsing with XML_PARSE_HUGE). Nokogiri 1.13.9 upgrades the packaged libxml2 to v2.10.3 to address these issues. Processing crafted XML input may lead to denial of service or memory corruption. (The advisory also references CVE-2022-2309, a NULL pointer dereference via iterwalk/canonicalize, which maintainers determined does not affect Nokogiri users.)",CWE-476,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,This CVE ID has been rejected as a duplicate.,,,,,,
+CVE-2024-7036,REJECTED,@huntr_ai,Denial of Service in open-webui/open-webui,"A vulnerability in open-webui/open-webui v0.3.8 allows an unauthenticated attacker to sign up with excessively large text in the 'name' field, causing the Admin panel to become unresponsive. This prevents administrators from performing essential user management actions such as deleting, editing, or adding users. The vulnerability can also be exploited by authenticated users with low privileges, leading to the same unresponsive state in the Admin panel.",CWE-400,CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-72044,REJECTED,Linux,ksmbd: fix stack buffer overflow in multichannel session-key copy,"In the Linux kernel, the following vulnerability has been resolved:
+
+ksmbd: fix stack buffer overflow in multichannel session-key copy
+
+Commit 4b706360ffb7 (""ksmbd: fix multichannel binding and enforce channel
+limit"") moved the binding-path session key out of the session-wide
+sess->sess_key (CIFS_KEY_SIZE = 40) into a new per-channel buffer, and
+sized both that buffer and the on-stack copy used during binding with
+SMB2_NTLMV2_SESSKEY_SIZE (16):
+
+	struct channel {
+		char	sess_key[SMB2_NTLMV2_SESSKEY_SIZE];	/* 16 */
+		...
+	};
+
+	ntlm_authenticate() / krb5_authenticate():
+		char channel_key[SMB2_NTLMV2_SESSKEY_SIZE] = {};	/* 16 */
+		char *auth_key = conn->binding ? channel_key : sess->sess_key;
+
+The two writers that fill this destination still bound the copy length
+against CIFS_KEY_SIZE (40), not against the 16-byte buffer:
+
+	ksmbd_decode_ntlmssp_auth_blob() (NTLM key exchange):
+		if (sess_key_len > CIFS_KEY_SIZE)	/* 40 */
+			return -EINVAL;
+		arc4_crypt(ctx_arc4, sess_key,
+			   (char *)authblob + sess_key_off, sess_key_len);
+
+	ksmbd_krb5_authenticate():
+		if (resp->session_key_len > sizeof(sess->sess_key))	/* 40 */
+			...
+		memcpy(sess_key, resp->payload, resp->session_key_len);
+
+On a binding SESSION_SETUP, auth_key points at the 16-byte channel_key,
+so a client that supplies an NTLM EncryptedRandomSessionKey of up to 40
+bytes (with NTLMSSP_NEGOTIATE_KEY_EXCH), or a Kerberos ticket whose
+session key is longer than 16 bytes (a normal AES256 key is 32), writes
+past the 16-byte stack buffer -- up to a 24-byte kernel stack overflow.
+KASAN reports it as a stack-out-of-bounds write in arc4_crypt() called
+from ksmbd_decode_ntlmssp_auth_blob().
+
+The destinations must be able to hold the full session key the length
+checks already permit. Size the per-channel key buffer and the two
+on-stack channel_key buffers with CIFS_KEY_SIZE, matching sess->sess_key.",,,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-78477,REJECTED,Wordfence,Jawn <= 1.4.2 - Unauthenticated Privilege Escalation,"The Jawn theme for WordPress is vulnerable to Privilege Escalation in all versions up to, and including, 1.4.2. This makes it possible for unauthenticated attackers to elevate their privileges to that of an administrator.",CWE-266,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,** REJECT ** DO NOT USE THIS CANDIDATE NUMBER. Reason: This candidate was issued in error. Notes: All references and descriptions in this candidate have been removed to prevent accidental usage.,,,,,,
+CVE-2026-73692,REJECTED,VulnCheck,Authorization Bypass via Inverted Boolean in clonetasks Mass Action in Dolibarr ERP/CRM,"Dolibarr contains an authorization bypass vulnerability in the clonetasks mass action that allows authenticated users with project creation permissions to clone tasks into private projects they are not authorized to access. An inverted boolean condition in the private-project membership check within actions_massactions.inc.php causes the authorization flag to be set for unauthorized users, allowing attackers to supply a user-controlled projectid POST parameter to create task records in any private project.",CWE-863,CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-69159,REJECTED,GitHub_M,FreeRDP: Out-of-Bounds Read in Planar RLE Decoder (planar_decompress_plane_rle / planar_decompress_plane_rle_only),"FreeRDP is a free implementation of the Remote Desktop Protocol. Prior to 3.29.0, planar_decompress_plane_rle and planar_decompress_plane_rle_only in libfreerdp/codec/planar.c verify that a control byte exists but do not verify that the source buffer contains the zero to fifteen raw bytes declared by that control byte. A malicious RDP server can send a truncated planar bitmap or surface update whose final control byte claims additional raw bytes, causing the decoder to read beyond pSrcData while processing a color plane. This can crash the client and may disclose adjacent memory. This issue is fixed in version 3.29.0.",CWE-125,CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:L,** REJECT ** DO NOT USE THIS CANDIDATE NUMBER. ConsultIDs: CVE-2026-67306. Reason: This candidate is a duplicate of CVE-2026-67306. Notes: All CVE users should reference CVE-2026-67306 instead of this candidate.,,,,,,
+CVE-2026-74259,REJECTED,Linux,cifs: remove all cifs files before kill super,"In the Linux kernel, the following vulnerability has been resolved:
+
+cifs: remove all cifs files before kill super
+
+Cifs files may be put into fileinfo_put_wq during umounting cifs.
+After umount done, cifsFileInfo_put_final is called, which cause
+following BUG:
+
+BUG: kernel NULL pointer dereference, address: 0000000000000000
+...
+[  134.222152]  list_lru_add+0x64/0x1a0
+[  134.222399]  ? cifs_put_tcon+0x171/0x340 [cifs]
+[  134.222772]  d_lru_add+0x44/0x60
+[  134.222997]  dput+0x1fc/0x210
+[  134.223213]  cifsFileInfo_put_final+0x11a/0x140 [cifs]
+[  134.223576]  process_one_work+0x17c/0x320
+[  134.223843]  worker_thread+0x188/0x280
+[  134.224084]  ? __pfx_worker_thread+0x10/0x10
+[  134.224366]  kthread+0xcc/0x100
+[  134.224576]  ? __pfx_kthread+0x10/0x10
+[  134.224827]  ret_from_fork+0x30/0x50
+[  134.225063]  ? __pfx_kthread+0x10/0x10
+[  134.225328]  ret_from_fork_asm+0x1b/0x30
+
+This can be reproduce by following:
+unshare -n bash -c ""
+mkdir -p ${CIFS_MNT}
+ip netns attach root 1
+ip link add eth0 type veth peer veth0 netns root
+ip link set eth0 up
+ip -n root link set veth0 up
+ip addr add 192.168.0.2/24 dev eth0
+ip -n root addr add 192.168.0.1/24 dev veth0
+ip route add default via 192.168.0.1 dev eth0
+ip netns exec root sysctl net.ipv4.ip_forward=1
+ip netns exec root iptables -t nat -A POSTROUTING -s 192.168.0.2 -o
+${DEV} -j MASQUERADE
+mount -t cifs ${CIFS_PATH} ${CIFS_MNT} -o
+vers=3.0,sec=ntlmssp,credentials=${CIFS_CRED},rsize=65536,wsize=65536,cache=none,echo_interval=1
+touch ${CIFS_MNT}/a.txt
+ip netns exec root iptables -t nat -D POSTROUTING -s 192.168.0.2 -o
+${DEV} -j MASQUERADE
+""
+umount ${CIFS_MNT}",,CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.,,,,,,
+CVE-2026-78568,REJECTED,Wordfence,Total Donations <= 2.0.5 - Unauthenticated SQL Injection,"The Total Donations plugin for WordPress is vulnerable to SQL Injection in all versions up to, and including, 2.0.5 due to insufficient escaping on the user supplied parameter and lack of sufficient preparation on the existing SQL query.  This makes it possible for unauthenticated attackers to append additional SQL queries into already existing queries that can be used to extract sensitive information from the database.",CWE-89,CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,** REJECT ** DO NOT USE THIS CANDIDATE NUMBER. Reason: This candidate was issued in error. Notes: All references and descriptions in this candidate have been removed to prevent accidental usage.,,,,,,
+CVE-2025-71346,REJECTED,VulnCheck,Nokogiri before 1.18.8 Heap Buffer Under-read via XML Schema,"Nokogiri before 1.18.8 packages a vulnerable version of libxml2 (before 2.13.8) that contains a heap-based buffer under-read (CVE-2025-32415) in the xmlSchemaIDCFillNodeTables function in xmlschemas.c. The issue can be triggered when validating against an untrusted XML Schema, or when validating untrusted documents against trusted schemas that use xsd:keyref in combination with recursively defined types that have additional identity constraints. Upstream and MITRE rate this issue as low severity.",CWE-125,CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L,This CVE ID has been rejected as a duplicate.,,,,,,

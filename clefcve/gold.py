@@ -1,6 +1,6 @@
 """Hand-labeled gold set: export a stratified sample to CSV for labeling, then import the labels.
 
-  python -m clefcve.gold export [--n 150]   # writes data/gold/to_label.csv
+  python -m clefcve.gold export [--n 150]   # writes gold/to_label.csv
   python -m clefcve.gold import FILE.csv      # loads labels into the `gold` table
 
 Label columns (leave blank if unsure):
@@ -21,7 +21,7 @@ import duckdb
 from . import config
 
 LABEL_COLUMNS = ["is_vuln", "desc_clarity", "cwe_ok", "better_cwe", "cvss31_vector", "notes"]
-GOLD_DIR = config.PROJECT_ROOT / "data" / "gold"
+GOLD_DIR = config.PROJECT_ROOT / "gold"
 
 
 def export(con, n: int, seed: int, out: Path) -> int:

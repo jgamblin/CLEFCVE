@@ -32,6 +32,6 @@ Answers are cached in `data/answers.duckdb`.
 
 ## Gold set
 ```bash
-.venv/bin/python -m clefcve.gold export        # → data/gold/to_label.csv (150 rows)
-.venv/bin/python -m clefcve.gold import data/gold/to_label.csv
+.venv/bin/python -m clefcve.gold export        # → gold/to_label.csv (150 rows)
+.venv/bin/python -m clefcve.gold import gold/to_label.csv
 ```
