@@ -26,8 +26,7 @@ SAMPLE_PATH = GOLD_DIR / "to_label.csv"
 PAGE = Path(__file__).with_name("labeler.html")
 CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$")
 # Questions whose Clef answers are shown after labeling, in display order.
-REVEAL_QUESTIONS = ["security_impact_stated", "impact_basis", "desc_clarity", "cwe_fit",
-                    *[f"cvss31_{m}" for m in ("AV", "AC", "PR", "UI", "S", "C", "I", "A")]]
+REVEAL_QUESTIONS = ["security_impact_stated", "impact_basis", "desc_clarity"]
 
 _lock = threading.Lock()
 

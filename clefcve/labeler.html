@@ -112,11 +112,6 @@ const IMPACT_BASIS = {
   stated_explicitly: "Stated explicitly", implied_by_weakness: "Implied by vuln class",
   bug_fix_only: "Bug/fix only", not_security_relevant: "Not security relevant",
   insufficient_information: "Insufficient info" };
-const CWE_FIT = {
-  exact: "Exact", too_general: "Too general", too_specific: "Too specific",
-  impact_not_cause: "Impact, not cause", related_but_wrong: "Related but wrong", wrong: "Wrong" };
-const CVSS31 = { AV: ["N", "A", "L", "P"], AC: ["L", "H"], PR: ["N", "L", "H"], UI: ["N", "R"],
-                 S: ["U", "C"], C: ["N", "L", "H"], I: ["N", "L", "H"], A: ["N", "L", "H"] };
 
 let items = [], idx = 0, cur = null, label = {}, saveTimer = null;
 const $ = (id) => document.getElementById(id);
@@ -177,18 +172,12 @@ function opts(field, choices, keyHints = {}) {
 
 function renderForm() {
   const cwes = cur.cwes.filter((c) => c.cwe_id);
-  const cweFit = label.cwe_fit || {};
   const cweBlock = cwes.length ? cwes.map((c) => `
       <div class="cwe"><b class="mono">${esc(c.cwe_id)}</b> ${esc(c.name || c.text)}
         ${c.usage && c.usage !== "Allowed" ? `<span class="tag ${c.usage === "Prohibited" ? "bad" : "warn"}">${esc(c.usage)}</span>` : ""}
-        <div class="def">${esc(c.definition || "")}</div></div>
-      <div class="opts">${Object.entries(CWE_FIT).map(([v, t]) =>
-        `<button class="opt ${cweFit[c.cwe_id] === v ? "sel" : ""}" data-cwe="${esc(c.cwe_id)}" data-value="${v}">${t}</button>`).join("")}</div>`).join("")
+        <div class="def">${esc(c.definition || "")}</div></div>`).join("")
     : `<div class="locked">No structured CWE assigned${cur.cwes.length ? ` (text only: “${esc(cur.cwes.map((c) => c.text).join("; "))}”)` : ""}.</div>`;
 
-  const cv = label.cvss31 || {};
-  const cna31 = cur.cvss.find((c) => c.version === "3.1" || c.version === "3.0");
-  const vector = Object.keys(CVSS31).every((m) => cv[m]) ? "CVSS:3.1/" + Object.keys(CVSS31).map((m) => `${m}:${cv[m]}`).join("/") : "";
   $("form").innerHTML = `
     <div class="q"><label class="qtitle">Q1 · Does the description establish a security impact?</label>
       <div class="hint">Judge only the text: does it say or clearly imply what an attacker could achieve?</div>
@@ -200,18 +189,9 @@ function renderForm() {
     <div class="q"><label class="qtitle">Q2 · Description clarity for a defender</label>
       <div class="hint">0 Unusable · 1 Poor (vague) · 2 Adequate (gaps: versions/attacker/impact) · 3 Good · 4 Excellent</div>
       ${opts("desc_clarity", Object.fromEntries(CLARITY.map((t, i) => [i, `${i} ${t}`])), Object.fromEntries(CLARITY.map((_, i) => [i, i])))}</div>
-    <div class="q"><label class="qtitle">Q3 · Does the assigned CWE fit the root cause?</label>
-      ${cweBlock}
-      <div class="hint" style="margin-top:8px">Better CWE (optional):</div>
-      <input type="text" id="better_cwe" placeholder="e.g. CWE-787" value="${esc(label.better_cwe || "")}"></div>
-    <div class="q"><label class="qtitle">Q4 · Your CVSS v3.1 base metrics</label>
-      <div class="hint">Scored blind by default. Leave blank if the record doesn't give enough to judge.
-        ${cna31 ? (label.cvss_saw_cna ? ` CNA: <span class="mono">${esc(cna31.vector)}</span>`
-                   : ` <button id="showCna">Show CNA vector</button>`) : " (No CNA v3.x vector.)"}</div>
-      ${Object.entries(CVSS31).map(([m, vals]) => `<div class="metric"><b>${m}</b><div class="opts">${vals.map((v) =>
-        `<button class="opt ${cv[m] === v ? "sel" : ""}" data-metric="${m}" data-value="${v}">${v}</button>`).join("")}</div></div>`).join("")}
-      ${vector ? `<div class="vector">${vector}</div>` : ""}
-      ${Object.keys(cv).length ? `<button id="clearCvss" style="margin-top:8px">Clear CVSS</button>` : ""}</div>
+    <div class="q"><label class="qtitle">Assigned CWE (for context)</label>
+      <div class="hint">CWE fit and CVSS are scored by an LLM jury (clefcve.jury), not by hand.</div>
+      ${cweBlock}</div>
     <div class="q"><label class="qtitle">Notes</label><textarea id="notes">${esc(label.notes || "")}</textarea></div>
     <div class="q"><button id="clearAll">Clear all labels for this CVE</button></div>`;
 }
@@ -228,10 +208,7 @@ async function renderReveal() {
                                   : a.score != null ? a.score.toFixed(1) : "–");
   const yours = { security_impact_stated: label.security_impact === "y" ? "yes" : label.security_impact === "n" ? "no" : null,
                   impact_basis: label.impact_basis, desc_clarity: label.desc_clarity };
-  for (const m of Object.keys(CVSS31)) yours[`cvss31_${m}`] = label.cvss31?.[m];
-  for (const [c, f] of Object.entries(label.cwe_fit || {})) yours[`cwe_fit:${c}`] = f;
   const rows = Object.keys({ ...yours, ...Object.assign({}, ...models.map((m) => clef[m])) })
-    .filter((k) => !k.startsWith("cwe_fit") || k.includes(":"))
     .map((k) => {
       const y = yours[k];
       const cells = models.map((m) => {
@@ -288,19 +265,7 @@ $("form").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (!b) return;
   if (b.dataset.field) return set(b.dataset.field, b.dataset.value);
-  if (b.dataset.cwe) {
-    const fit = { ...(label.cwe_fit || {}) };
-    fit[b.dataset.cwe] = fit[b.dataset.cwe] === b.dataset.value ? undefined : b.dataset.value;
-    label.cwe_fit = JSON.parse(JSON.stringify(fit));
-  } else if (b.dataset.metric) {
-    const cv = { ...(label.cvss31 || {}) };
-    cv[b.dataset.metric] = cv[b.dataset.metric] === b.dataset.value ? undefined : b.dataset.value;
-    label.cvss31 = JSON.parse(JSON.stringify(cv));
-  } else if (b.id === "showCna") {
-    label.cvss_saw_cna = true;   // recorded so evaluation can separate blind from anchored CVSS labels
-  } else if (b.id === "clearCvss") {
-    label.cvss31 = {};
-  } else if (b.id === "clearAll") {
+  if (b.id === "clearAll") {
     if (!confirm("Clear every label for this CVE?")) return;
     label = {};
   } else return;

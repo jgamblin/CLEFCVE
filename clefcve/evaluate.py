@@ -7,6 +7,7 @@ noisy, which is why CNA-vs-CISA agreement is reported alongside as a human-vs-hu
 """
 
 import argparse
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -171,6 +172,122 @@ def severity_section(con) -> str:
     return "\n".join(out)
 
 
+def load_jury(con) -> int:
+    """Majority vote per (CVE, field) across the LLM jury → temp table `jury_cons`; raw votes → `jury_votes`."""
+    from .jury import PROMPT_HASH, consensus
+    con.execute("CREATE OR REPLACE TEMP TABLE jury_votes (cve_id VARCHAR, juror VARCHAR, cwe_id VARCHAR, field VARCHAR, value VARCHAR)")
+    con.execute("CREATE OR REPLACE TEMP TABLE jury_cons (cve_id VARCHAR, cwe_id VARCHAR, field VARCHAR, value VARCHAR, "
+                "votes INTEGER, jurors INTEGER)")
+    try:
+        rows = con.execute("""
+            SELECT j.cve_id, j.juror, j.cwe_id, j.answer FROM a.jury j
+            JOIN cves c ON c.cve_id = j.cve_id AND c.record_sha256 = j.record_sha256
+            WHERE j.prompt_hash = ?
+            QUALIFY row_number() OVER (PARTITION BY j.cve_id, j.juror ORDER BY j.answered_at DESC) = 1
+        """, [PROMPT_HASH]).fetchall()
+    except duckdb.CatalogException:
+        return 0
+    by_cve: dict = {}
+    for cve_id, juror, cwe_id, answer in rows:
+        ans = json.loads(answer)
+        for field, value in ans.items():
+            con.execute("INSERT INTO jury_votes VALUES (?, ?, ?, ?, ?)", [cve_id, juror, cwe_id, field, value])
+            by_cve.setdefault((cve_id, cwe_id), {}).setdefault(field, []).append(value)
+    for (cve_id, cwe_id), fields in by_cve.items():
+        for field, votes in fields.items():
+            value = consensus(votes, quorum=len(votes) // 2 + 1)
+            con.execute("INSERT INTO jury_cons VALUES (?, ?, ?, ?, ?, ?)",
+                        [cve_id, cwe_id, field, value, votes.count(value) if value else 0, len(votes)])
+    return len({r[0] for r in rows})
+
+
+def jury_section(con) -> str:
+    n = load_jury(con)
+    out = ["## LLM jury: reference labels for CVSS and CWE\n"]
+    if not n:
+        return out[0] + "\n_No jury answers yet: run `python -m clefcve.jury`._\n"
+    jurors = [r[0] for r in con.execute("SELECT DISTINCT juror FROM jury_votes ORDER BY 1").fetchall()]
+    out.append(f"{n} CVEs, {len(jurors)} jurors ({', '.join(jurors)}), from the same text Clef sees. "
+               "The reference for each field is the strict-majority vote; fields without one are excluded.\n")
+    metrics_sql = "[" + ", ".join(f"'{m}'" for m in CVSS31) + ", 'cwe_fit', 'best_cwe']"
+    out.append("\n**How much the jury agrees with itself:**\n")
+    out.append(md_table(con, f"""
+        SELECT field, count(*) AS n, round(100.0 * avg((votes = jurors)::INT), 1) AS unanimous_pct,
+               round(100.0 * avg((value IS NOT NULL)::INT), 1) AS has_majority_pct
+        FROM jury_cons WHERE jurors >= 3 GROUP BY field ORDER BY array_position({metrics_sql}, field)
+    """))
+    out.append("\n**Who agrees with the jury: Clef, Flash, or the CNA?** (CVSS v3.1, per metric, where the jury has a "
+               "majority)\n")
+    cna_parsed = " UNION ALL ".join(
+        f"SELECT cve_id, '{m}' AS field, regexp_extract(vector, '/{m}:([A-Z])', 1) AS value FROM cna31" for m in CVSS31)
+    con.execute(f"""
+        CREATE OR REPLACE TEMP TABLE jury_cmp AS
+        WITH cna31 AS (SELECT cve_id, vector FROM metrics WHERE source = 'cna' AND version IN ('3.0', '3.1')
+                       QUALIFY row_number() OVER (PARTITION BY cve_id ORDER BY version DESC) = 1),
+             cna AS ({cna_parsed})
+        SELECT j.cve_id, j.field, j.value AS jury,
+               max(x.choice) FILTER (x.model = 'clef') AS clef,
+               max(x.choice) FILTER (x.model = 'clef-flash') AS flash,
+               any_value(c.value) AS cna
+        FROM jury_cons j
+        LEFT JOIN ans x ON x.cve_id = j.cve_id AND x.question_id = 'cvss31_' || j.field
+        LEFT JOIN cna c ON c.cve_id = j.cve_id AND c.field = j.field AND c.value <> ''
+        WHERE j.value IS NOT NULL AND j.field IN ({", ".join(f"'{m}'" for m in CVSS31)})
+        GROUP BY j.cve_id, j.field, j.value
+    """)
+    out.append(md_table(con, f"""
+        SELECT field AS metric,
+               count(clef) AS n_clef, round(100.0 * avg((clef = jury)::INT), 1) AS clef_pct,
+               count(flash) AS n_flash, round(100.0 * avg((flash = jury)::INT), 1) AS flash_pct,
+               count(cna) AS n_cna, round(100.0 * avg((cna = jury)::INT), 1) AS cna_pct
+        FROM jury_cmp GROUP BY field ORDER BY array_position({metrics_sql}, field)
+    """))
+    out.append("\nSame comparison restricted to CVEs that have all three (Clef 27B, CNA vector, jury majority), "
+               "so the columns are directly comparable:\n")
+    out.append(md_table(con, f"""
+        SELECT field AS metric, count(*) AS n, round(100.0 * avg((clef = jury)::INT), 1) AS clef_pct,
+               round(100.0 * avg((cna = jury)::INT), 1) AS cna_pct,
+               count(*) FILTER (clef = jury AND cna <> jury) AS clef_right_cna_wrong,
+               count(*) FILTER (cna = jury AND clef <> jury) AS cna_right_clef_wrong
+        FROM jury_cmp WHERE clef IS NOT NULL AND cna IS NOT NULL
+        GROUP BY field ORDER BY array_position({metrics_sql}, field)
+    """))
+    out.append("\n**CWE:** fit of the CNA-assigned CWE, and whether the jury's preferred CWE matches it.\n")
+    out.append(md_table(con, """
+        WITH f AS (SELECT cve_id, cwe_id, value FROM jury_cons WHERE field = 'cwe_fit'),
+             b AS (SELECT cve_id, value FROM jury_cons WHERE field = 'best_cwe')
+        SELECT x.model, count(*) AS n,
+               round(100.0 * avg((x.choice = f.value)::INT) FILTER (f.value IS NOT NULL), 1) AS same_fit_pct,
+               round(100.0 * avg(((x.choice = 'exact') = (f.value = 'exact'))::INT) FILTER (f.value IS NOT NULL), 1)
+                   AS exact_vs_not_pct,
+               round(100.0 * avg((b.value = f.cwe_id)::INT) FILTER (b.value IS NOT NULL), 1) AS jury_best_is_cna_cwe_pct
+        FROM f JOIN ans x ON x.cve_id = f.cve_id AND x.item = f.cwe_id AND x.question_id = 'cwe_fit'
+        LEFT JOIN b ON b.cve_id = f.cve_id
+        GROUP BY x.model ORDER BY x.model DESC
+    """))
+    out.append("\n**Each juror vs the others' majority** (leave-one-out; how good a single general-purpose model is):\n")
+    out.append(md_table(con, f"""
+        WITH loo AS (
+            SELECT v.juror, v.field, v.value,
+                   (SELECT mode(o.value) FROM jury_votes o
+                    WHERE o.cve_id = v.cve_id AND o.field = v.field AND o.juror <> v.juror) AS others
+            FROM jury_votes v WHERE v.field IN ({", ".join(f"'{m}'" for m in CVSS31)}, 'cwe_fit'))
+        SELECT juror, count(*) AS answers,
+               round(100.0 * avg((value = others)::INT) FILTER (field <> 'cwe_fit'), 1) AS cvss_metric_pct,
+               round(100.0 * avg((value = others)::INT) FILTER (field = 'cwe_fit'), 1) AS cwe_fit_pct
+        FROM loo GROUP BY juror ORDER BY cvss_metric_pct DESC
+    """))
+    out.append("\nCVEs where the jury and Clef 27B agree with each other but not with the CNA (likely CNA errors):\n")
+    out.append(md_table(con, """
+        SELECT j.cve_id, cv.assigner, string_agg(j.field || ' ' || j.cna || '→' || j.jury, ', ' ORDER BY j.field) AS changes,
+               left(cv.description, 110) AS description
+        FROM jury_cmp j JOIN cves cv USING (cve_id)
+        WHERE j.clef = j.jury AND j.cna IS NOT NULL AND j.cna <> j.jury
+        GROUP BY j.cve_id, cv.assigner, cv.description ORDER BY count(*) DESC, j.cve_id LIMIT 12
+    """))
+    return "\n".join(out)
+
+
 def ssvc_section(con) -> str:
     out = ["## SSVC vs CISA Vulnrichment\n",
            "`baseline` = always predicting CISA's most common value in this sample.\n"]
@@ -240,23 +357,15 @@ def vuln_section(con) -> str:
 
 
 def load_gold(con) -> int:
-    """Register hand labels from gold/labels.json as temp tables `gold` and `gold_cvss` (long form)."""
+    """Register hand labels (Q1, clarity) from gold/labels.json as temp table `gold`."""
     from .labeler import LABELS_PATH, is_done, load_labels
     labels = {k: v for k, v in load_labels(LABELS_PATH).items() if is_done(v)}
     con.execute("""CREATE OR REPLACE TEMP TABLE gold (cve_id VARCHAR, security_impact BOOLEAN, impact_basis VARCHAR,
                    is_vuln VARCHAR, desc_clarity INTEGER, cvss_saw_cna BOOLEAN)""")
-    con.execute("CREATE OR REPLACE TEMP TABLE gold_cwe (cve_id VARCHAR, cwe_id VARCHAR, fit VARCHAR)")
-    con.execute("CREATE OR REPLACE TEMP TABLE gold_cvss (cve_id VARCHAR, metric VARCHAR, value VARCHAR)")
     for cve_id, l in labels.items():
         con.execute("INSERT INTO gold VALUES (?, ?, ?, ?, ?, ?)", [
             cve_id, l["security_impact"] == "y", l.get("impact_basis"), l.get("is_vuln"), l["desc_clarity"],
             bool(l.get("cvss_saw_cna"))])
-        for cwe_id, fit in (l.get("cwe_fit") or {}).items():
-            con.execute("INSERT INTO gold_cwe VALUES (?, ?, ?)", [cve_id, cwe_id, fit])
-        cv = l.get("cvss31") or {}
-        if len(cv) == len(CVSS31):  # only complete vectors count
-            for m, v in cv.items():
-                con.execute("INSERT INTO gold_cvss VALUES (?, ?, ?)", [cve_id, m, v])
     return len(labels)
 
 
@@ -265,7 +374,8 @@ def gold_section(con) -> str:
     out = ["## Accuracy against hand labels (gold set)\n"]
     if not n:
         return out[0] + "\n_No labels yet: run `python -m clefcve.labeler` and label `gold/to_label.csv`._\n"
-    out.append(f"{n} CVEs labeled. Unlike the agreement numbers elsewhere, these are scored against your judgment.\n")
+    out.append(f"{n} CVEs labeled (Q1 and clarity; CVSS and CWE use the LLM jury below). These are scored "
+               "against your judgment, unlike the agreement numbers elsewhere.\n")
     out.append(md_table(con, """
         SELECT x.model, count(*) AS n,
                round(100.0 * avg(((x.p_true >= 0.5) = g.security_impact)::INT), 1) AS q1_accuracy_pct,
@@ -281,31 +391,6 @@ def gold_section(con) -> str:
                round(corr(x.score, g.desc_clarity), 2) AS pearson_r
         FROM gold g JOIN ans x USING (cve_id) WHERE x.question_id = 'desc_clarity'
         GROUP BY 1 ORDER BY 1 DESC
-    """))
-    out.append("\nCWE fit: exact label match, and agreement on the coarser exact-vs-not question.\n")
-    out.append(md_table(con, """
-        SELECT x.model, count(*) AS n, round(100.0 * avg((x.choice = g.fit)::INT), 1) AS same_fit_pct,
-               round(100.0 * avg(((x.choice = 'exact') = (g.fit = 'exact'))::INT), 1) AS exact_vs_not_pct
-        FROM gold_cwe g JOIN ans x ON x.cve_id = g.cve_id AND x.item = g.cwe_id AND x.question_id = 'cwe_fit'
-        GROUP BY 1 ORDER BY 1 DESC
-    """))
-    out.append("\nCVSS v3.1 per metric: who is closer to your vector, Clef or the CNA? "
-               "(`blind_n` = labels made without revealing the CNA vector.)\n")
-    parsed = " UNION ALL ".join(
-        f"SELECT cve_id, '{m}' AS metric, regexp_extract(vector, '/{m}:([A-Z])', 1) AS value FROM cna31" for m in CVSS31)
-    out.append(md_table(con, f"""
-        WITH cna31 AS (SELECT cve_id, vector FROM metrics WHERE source = 'cna' AND version IN ('3.0', '3.1')
-                       QUALIFY row_number() OVER (PARTITION BY cve_id ORDER BY version DESC) = 1),
-             cna AS ({parsed}),
-             m AS (SELECT DISTINCT model FROM ans WHERE pack = 'cvss31')
-        SELECT gc.metric, m.model, count(x.choice) AS n,
-               count(*) FILTER (x.choice IS NOT NULL AND NOT g.cvss_saw_cna) AS blind_n,
-               round(100.0 * avg((x.choice = gc.value)::INT), 1) AS clef_match_pct,
-               round(100.0 * avg((c.value = gc.value)::INT) FILTER (x.choice IS NOT NULL), 1) AS cna_match_pct
-        FROM gold_cvss gc JOIN gold g USING (cve_id) CROSS JOIN m
-        LEFT JOIN ans x ON x.cve_id = gc.cve_id AND x.model = m.model AND x.question_id = 'cvss31_' || gc.metric
-        LEFT JOIN cna c ON c.cve_id = gc.cve_id AND c.metric = gc.metric
-        GROUP BY gc.metric, m.model ORDER BY array_position({CVSS31}, gc.metric), m.model DESC
     """))
     return "\n".join(out)
 
@@ -436,7 +521,7 @@ def report(con) -> str:
         "| model | pack | CVEs | answers |\n|---|---|---|---|\n" +
         "\n".join(f"| {m} | {p} | {c} | {a} |" for m, p, c, a in counts) + "\n",
         gold_section(con), vuln_section(con), description_section(con), cwe_section(con),
-        "## Q4: Is the CVSS correct?\n", severity_section(con), cvss_section(con, "3.1"), cvss_section(con, "4.0"),
+        "## Q4: Is the CVSS correct?\n", jury_section(con), severity_section(con), cvss_section(con, "3.1"), cvss_section(con, "4.0"),
         ssvc_section(con), rules_section(con), models_section(con),
     ]
     return "\n".join(parts)
