@@ -106,6 +106,34 @@ Clef is a **decision model, not a chat model**. It scores typed questions agains
 - **Clef 27B is clearly better than Flash at CVSS.** On a WordPress SSRF, Flash picked AV:L. On kernel bugs, Flash guessed PR:H.
 - **Data files:** answers go in `data/answers.duckdb`, opened briefly for each write so the corpus DB stays readable. `clefcve.gold export` writes a 150-row stratified CSV for hand labeling: at most 3 CVEs per CNA, plus 21 rejected records.
 
+## First results (2026-10-03)
+
+**Sample:** 300 random CVEs from the 30-day slice plus 101 recovered REJECTED records.
+- **Clef Flash** answered every pack on all 300.
+- **Clef 27B** answered the quality pack on all 300 (plus rejected) and the CVSS/CWE packs on the first 150. Its run was cut off by the 2-hour background limit.
+
+Full tables: `reports/2026-10-03-first-results.md`. Regenerate with `python -m clefcve.evaluate`.
+
+| Question | Verdict | Evidence |
+|---|---|---|
+| **Q1 Is it a vulnerability?** | ⚠️ **Weak** | Can't tell invalid CVEs from valid ones by the text: rejected-as-invalid records score p = 0.93 vs 0.89 for published. It *does* flag Linux kernel fix logs with no stated impact; all 10 lowest-scoring CVEs are Linux. |
+| **Q2 Description quality** | ✅ **Useful** | Detects commit-message-style descriptions perfectly (Linux 100%, everyone else 0%). The clarity ranking by CNA is believable: VulnCheck 3.4, GitHub/WPScan 3.3 … Patchstack 1.9, whose descriptions state impact only 13% of the time. Also caught Cisco marketing boilerplate. |
+| **Q3 CWE correct?** | ✅ **Promising** | Clef 27B: 71% exact, 20% too general. Rates Discouraged CWEs "too general" 41% of the time vs 14% for Allowed ones. Its top rejections are real errors: "integer underflow" mapped to CWE-122, "OOB write" mapped to CWE-125 (read). The `cwe_acceptable` yes/no is too lenient; use `cwe_fit`. |
+| **Q4 CVSS correct?** | ✅ **Useful as a reviewer** | Clef 27B matches the CNA's severity band 62% of the time (v3.1; Flash 45%). Mean score difference is 1.3, with errors split evenly up and down. Exploitability metrics agree 80–96%; impact metrics 58–74%. Its most confident disagreements include likely CNA errors, such as an IBM DoS scored C:H/A:N (C and A apparently swapped) and an NVIDIA local bug scored AV:P. |
+| **Q5 Rules** | ✅ Mostly deterministic | See Stage 2. Judgment rules: about 6% of records bundle multiple vulnerabilities, about 1% credit people. |
+| **SSVC vs CISA** | Mixed | Technical impact 84% vs a 60% baseline (real skill). Exploitation 86% vs 80%, Automatable 76% vs 75% (no skill from the text alone). |
+
+**Model comparison.** The two models give the same answer 81–93% of the time. Clef 27B is about 3.5–4× slower: roughly 11 s per CVE for the quality pack and 4.6 s for CVSS v3.1. Flash is fine for description quality. Use Clef 27B for CVSS and CWE.
+
+**Prompt tuning so far.** Early CVSS impact questions under-rated impact. Spelling out how a stated outcome maps to an impact level raised Flash's C agreement from 38% to 52% and removed the bias.
+
+### Next
+1. Finish Clef 27B CVSS/CWE on the remaining 150 sampled CVEs: `MODELS=clef ./scripts/first_results.sh` from a terminal.
+2. Hand-label `data/gold/to_label.csv` (150 rows). Every number above is *agreement*, not accuracy.
+3. Change Q1 from "is this a vulnerability" to "is a security impact stated", which is what the model can actually judge from the text.
+4. Full 60-day runs: Flash for description quality (about 24 h for the quality pack), Clef 27B for CVSS and CWE on the CVEs flagged by lint or Flash.
+5. Per-CNA report card artifact.
+
 ## Architecture (lightweight)
 
 ```
