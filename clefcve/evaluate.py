@@ -35,6 +35,24 @@ def connect(db: Path, answers_db: Path) -> duckdb.DuckDBPyConnection:
         QUALIFY row_number() OVER (PARTITION BY x.cve_id, x.item, x.model, x.question_id
                                    ORDER BY x.answered_at DESC) = 1
     """)
+    # The security-impact cascade: Clef Flash reads everything; where Flash says "no impact stated" and Clef 27B
+    # has re-checked the CVE (scripts/confirm_flagged.sh), 27B's answer is final.
+    con.execute("""
+        CREATE TEMP VIEW impact AS
+        WITH f AS (SELECT cve_id, max(p_true) FILTER (question_id = 'security_impact_stated') AS p,
+                          max(choice) FILTER (question_id = 'impact_basis') AS b
+                   FROM ans WHERE model = 'clef-flash' AND item = ''
+                     AND question_id IN ('security_impact_stated', 'impact_basis') GROUP BY 1),
+             k AS (SELECT cve_id, max(p_true) FILTER (question_id = 'security_impact_stated') AS p,
+                          max(choice) FILTER (question_id = 'impact_basis') AS b
+                   FROM ans WHERE model = 'clef' AND item = ''
+                     AND question_id IN ('security_impact_stated', 'impact_basis') GROUP BY 1)
+        SELECT f.cve_id, f.p AS flash_p, k.p AS clef_p,
+               (f.p < 0.5 AND k.p IS NOT NULL) AS rechecked,
+               CASE WHEN f.p < 0.5 AND k.p IS NOT NULL THEN k.p ELSE f.p END AS p_true,
+               CASE WHEN f.p < 0.5 AND k.p IS NOT NULL THEN coalesce(k.b, f.b) ELSE f.b END AS basis
+        FROM f LEFT JOIN k USING (cve_id) WHERE f.p IS NOT NULL
+    """)
     return con
 
 
@@ -339,11 +357,21 @@ def vuln_section(con) -> str:
         FROM ans JOIN cves USING (cve_id) WHERE question_id = 'impact_basis' AND state = 'PUBLISHED'
         GROUP BY model, choice ORDER BY model DESC, n DESC
     """))
-    out.append(f"\nBy CNA: share of descriptions with no security impact established ({CORPUS_MODEL}, ≥ 25 answered CVEs):\n")
-    out.append(md_table(con, f"""
-        SELECT assigner, count(*) AS n, round(100.0 * avg((p_true < 0.5)::INT), 1) AS pct_no_impact_stated
-        FROM ans JOIN cves USING (cve_id)
-        WHERE question_id = 'security_impact_stated' AND model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
+    out.append("\nThe cascade: Flash reads everything, Clef 27B re-checks Flash's \"no impact\" calls.\n")
+    out.append(md_table(con, """
+        SELECT assigner = 'Linux' AS linux, count(*) AS answered,
+               count(*) FILTER (flash_p < 0.5) AS flash_no_impact,
+               count(*) FILTER (rechecked) AS rechecked_by_27b,
+               count(*) FILTER (rechecked AND clef_p >= 0.5) AS overturned,
+               round(100.0 * count(*) FILTER (rechecked AND clef_p >= 0.5) / nullif(count(*) FILTER (rechecked), 0), 1)
+                   AS overturned_pct
+        FROM impact JOIN cves USING (cve_id) WHERE state = 'PUBLISHED' GROUP BY 1 ORDER BY 1
+    """))
+    out.append("\nBy CNA: share of descriptions with no security impact established (cascade, ≥ 25 answered CVEs):\n")
+    out.append(md_table(con, """
+        SELECT assigner, count(*) AS n, round(100.0 * avg((p_true < 0.5)::INT), 1) AS pct_no_impact_stated,
+               round(100.0 * avg((flash_p < 0.5)::INT), 1) AS flash_only_pct
+        FROM impact JOIN cves USING (cve_id) WHERE state = 'PUBLISHED'
         GROUP BY 1 HAVING count(*) >= 25 ORDER BY pct_no_impact_stated DESC, n DESC LIMIT 25
     """))
     out.append("\nPublished CVEs where Clef 27B finds the least stated impact:\n")

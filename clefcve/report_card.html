@@ -175,7 +175,7 @@
   </section>
 
   <section>
-    <h2>Can the small model be trusted?</h2>
+    <h2>Can the small model be trusted? Mostly, with a second look</h2>
     <p class="sub" id="spotSub"></p>
     <div class="verdicts" id="spot"></div>
   </section>
@@ -329,13 +329,18 @@ hbars($("clarityChart"), big.map((c) => ({ label: c.cna, value: c.clef.clarity }
 $("lowest").innerHTML = D.lowest.map((e) => `<div class="case"><div class="head">${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
   <span class="delta">clarity ${e.clarity.toFixed(1)}</span></div><div class="desc">${esc(short(e.description, 260))}</div></div>`).join("");
 
-// ---- Spot check ----
+// ---- Spot check + cascade ----
 const spot = Object.fromEntries(D.spot.map((s) => [s.question, s]));
-$("spotSub").textContent = `The full run uses Clef Flash (9B). On ${fmt(spot.security_impact_stated?.n ?? 0)} CVEs we also asked Clef 27B, about four times slower, to see how often the smaller model gives the same answer.`;
+const cas = { linux: D.cascade.find((c) => c.linux) || {}, other: D.cascade.find((c) => !c.linux) || {} };
+const overturn = (c) => c.rechecked ? c.overturned / c.rechecked : null;
+$("spotSub").textContent = `Clef Flash (9B) reads every description. Clef 27B, about four times slower, re-checks every description Flash says has no stated impact, except in the Linux kernel CNA, where a random sample shows the two agree. Where 27B has re-checked, its answer is the one used.`;
 $("spot").innerHTML = [
-  ["good", pct(spot.security_impact_stated?.agree), "Security impact stated", `Same yes/no answer as Clef 27B. When they differ, Flash is the stricter one ${pct(spot.security_impact_stated?.flash_stricter)} of the time, so its "no impact" rates run a little high.`],
-  ["good", pct(spot.desc_clarity?.agree), "Description clarity", `Within half a level of Clef 27B on the 0-4 scale.`],
-  ["mid", `${(COV.ms / 1000).toFixed(1)} s`, "Per description", `Median time on a laptop for these questions, so the whole ${D.window_days}-day corpus takes a few hours.`],
+  ["mid", pct(overturn(cas.other)), "Flash's “no impact” calls overturned, outside Linux",
+   `27B disagreed on ${fmt(cas.other.overturned || 0)} of ${fmt(cas.other.rechecked || 0)} re-checked so far. Flash is too strict with terse but complete phrasing such as Apple's “An app may be able to cause unexpected system termination.”`],
+  ["good", pct(overturn(cas.linux)), "Overturned for Linux kernel CVEs",
+   `${fmt(cas.linux.overturned || 0)} of ${fmt(cas.linux.rechecked || 0)} re-checked. For fix-log descriptions the small model is enough.`],
+  ["good", pct(spot.desc_clarity?.agree), "Clarity agreement",
+   `Flash is within half a level of 27B on the 0-4 scale. Clarity uses Flash everywhere so every CNA is scored by the same model.`],
 ].map(([cls, big, h, p]) => `<div class="verdict"><span class="tag ${cls}">${big}</span><h3>${h}</h3><p>${p}</p></div>`).join("");
 
 // ---- Shelved ----
@@ -353,7 +358,7 @@ $("methodBody").innerHTML = `
   <p><b>Grades.</b> Rule checks only, over every record a CNA published. Score = average pass rate of:</p>
   <ul>${Object.values(D.graded_checks).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>
   <p>Most-flagged checks across the corpus:</p><ul>${lintTop}</ul>
-  <p><b>Clef.</b> Cloudflare's Clef Flash (9B) answered three typed questions from each record's title and description through Ollama's decision endpoint: does the description establish a security impact (yes/no), how does it support one (five options), and how clear is it (0-4). It never sees the CVSS, CWE, or affected-product data. Clef 27B answered the same questions on a random sample as a check.</p>
+  <p><b>Clef.</b> Cloudflare's Clef Flash (9B) answered three typed questions from each record's title and description through Ollama's decision endpoint: does the description establish a security impact (yes/no), how does it support one (five options), and how clear is it (0-4). It never sees the CVSS, CWE, or affected-product data. Clef 27B re-checked the security-impact answer wherever Flash said no impact was stated (outside the Linux kernel CNA, plus a random 300 Linux CVEs), and its answer is used where it exists.</p>
   <p><b>Caveats.</b> Clef's answers are judgments about the text, checked against a larger model and a small set of hand labels, not ground truth. A CNA's grade measures record completeness against the rules, not the quality of its security work.</p>`;
 $("footer").textContent = `Generated ${D.generated} by clefcve.report_card.`;
 </script>

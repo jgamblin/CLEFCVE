@@ -16,6 +16,7 @@ import json
 import sys
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import duckdb
 import pyarrow as pa
@@ -202,13 +203,24 @@ def main(argv: list[str] | None = None):
     p.add_argument("--ids", help="comma-separated CVE IDs (overrides slice/sample)")
     p.add_argument("--assigner")
     p.add_argument("--time-limit-min", type=float)
+    p.add_argument("--questions", help="comma-separated subset of the pack's question ids")
+    p.add_argument("--ids-file", type=Path, help="file with one CVE ID per line (overrides slice/sample)")
     args = p.parse_args(argv)
 
     pack = load_pack(args.pack)
+    if args.questions:
+        keep = args.questions.split(",")
+        unknown = set(keep) - set(pack["questions"])
+        if unknown:
+            raise SystemExit(f"not in pack {pack['pack']}: {', '.join(sorted(unknown))}")
+        pack["questions"] = {q: pack["questions"][q] for q in keep}
+    ids = args.ids.split(",") if args.ids else None
+    if args.ids_file:
+        ids = [line.strip() for line in args.ids_file.read_text().splitlines() if line.strip()]
     con = connect_retry(args.db, read_only=True)
     cves = select_cves(con, slice_=args.slice_, sample=args.sample, seed=args.seed,
                        include_rejected=args.include_rejected,
-                       ids=args.ids.split(",") if args.ids else None, assigner=args.assigner)
+                       ids=ids, assigner=args.assigner)
     con.close()
     stats = run(args.db, args.answers_db, pack, args.model, cves,
                 limit_s=args.time_limit_min * 60 if args.time_limit_min else None)

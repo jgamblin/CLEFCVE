@@ -72,15 +72,14 @@ def build(min_cves: int) -> dict:
         c["grade"] = next(g for t, g in GRADES if c["score"] >= t)
 
     # Clef columns from the corpus run, where a CNA has enough answered CVEs.
+    # Impact columns use the cascade (Flash, re-checked by 27B); clarity is Flash everywhere, so CNAs compare evenly.
     clef = {r["cna"]: r for r in rows(con, f"""
-        SELECT assigner AS cna, count(DISTINCT cve_id) AS answered,
-               avg(score) FILTER (question_id = 'desc_clarity') AS clarity,
-               avg((p_true < 0.5)::INT) FILTER (question_id = 'security_impact_stated') AS no_impact,
-               avg((choice = 'bug_fix_only')::INT) FILTER (question_id = 'impact_basis') AS bug_fix_only
-        FROM ans JOIN cves USING (cve_id)
-        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
-          AND question_id IN ('desc_clarity', 'security_impact_stated', 'impact_basis')
-        GROUP BY 1""")}
+        WITH cl AS (SELECT cve_id, score FROM ans WHERE model = '{CORPUS_MODEL}' AND question_id = 'desc_clarity')
+        SELECT c.assigner AS cna, count(*) AS answered, avg(cl.score) AS clarity,
+               avg((i.p_true < 0.5)::INT) AS no_impact, avg((i.flash_p < 0.5)::INT) AS flash_no_impact,
+               avg((i.basis = 'bug_fix_only')::INT) AS bug_fix_only
+        FROM impact i JOIN cves c USING (cve_id) JOIN cl USING (cve_id)
+        WHERE c.state = 'PUBLISHED' GROUP BY 1""")}
     for c in cnas:
         r = clef.get(c["cna"])
         c["clef"] = r if r and r["answered"] >= MIN_ANSWERED else None
@@ -96,23 +95,25 @@ def build(min_cves: int) -> dict:
         FROM lint GROUP BY ALL HAVING flagged > 0 ORDER BY flagged DESC""")
 
     coverage = rows(con, f"""
-        SELECT count(DISTINCT cve_id) AS answered,
-               avg((p_true < 0.5)::INT) FILTER (question_id = 'security_impact_stated') AS no_impact,
-               avg(score) FILTER (question_id = 'desc_clarity') AS clarity,
-               avg((score < 1.5)::INT) FILTER (question_id = 'desc_clarity') AS poor,
-               avg((score >= 2.5)::INT) FILTER (question_id = 'desc_clarity') AS good,
-               median(request_ms) AS ms
-        FROM ans JOIN cves USING (cve_id) WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
-          AND question_id IN ('desc_clarity', 'security_impact_stated')""")[0]
+        WITH cl AS (SELECT cve_id, score, request_ms FROM ans
+                    WHERE model = '{CORPUS_MODEL}' AND question_id = 'desc_clarity')
+        SELECT count(*) AS answered, avg((i.p_true < 0.5)::INT) AS no_impact,
+               avg((i.flash_p < 0.5)::INT) AS flash_no_impact, avg(cl.score) AS clarity,
+               avg((cl.score < 1.5)::INT) AS poor, avg((cl.score >= 2.5)::INT) AS good, median(cl.request_ms) AS ms
+        FROM impact i JOIN cves c USING (cve_id) JOIN cl USING (cve_id) WHERE c.state = 'PUBLISHED'""")[0]
     # Share of all no-impact descriptions that come from each CNA.
-    no_impact_share = rows(con, f"""
-        SELECT assigner AS cna, count(*) AS n FROM ans JOIN cves USING (cve_id)
-        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED' AND question_id = 'security_impact_stated'
-          AND p_true < 0.5 GROUP BY 1 ORDER BY n DESC LIMIT 5""")
-    basis = rows(con, f"""
-        SELECT choice AS basis, count(*) AS n FROM ans JOIN cves USING (cve_id)
-        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED' AND question_id = 'impact_basis'
-        GROUP BY 1 ORDER BY n DESC""")
+    no_impact_share = rows(con, """
+        SELECT assigner AS cna, count(*) AS n FROM impact JOIN cves USING (cve_id)
+        WHERE state = 'PUBLISHED' AND p_true < 0.5 GROUP BY 1 ORDER BY n DESC LIMIT 5""")
+    basis = rows(con, """
+        SELECT basis, count(*) AS n FROM impact JOIN cves USING (cve_id)
+        WHERE state = 'PUBLISHED' AND basis IS NOT NULL GROUP BY 1 ORDER BY n DESC""")
+    cascade = rows(con, """
+        SELECT assigner = 'Linux' AS linux, count(*) FILTER (flash_p < 0.5) AS flash_flagged,
+               count(*) FILTER (rechecked) AS rechecked, count(*) FILTER (rechecked AND clef_p >= 0.5) AS overturned,
+               count(*) FILTER (clef_p IS NOT NULL) AS clef_checked,
+               count(*) FILTER (clef_p IS NOT NULL AND (clef_p < 0.5) = (flash_p < 0.5)) AS clef_agrees
+        FROM impact JOIN cves USING (cve_id) WHERE state = 'PUBLISHED' GROUP BY 1""")
     # Spot check: Clef 27B vs Flash on the same CVEs.
     spot = rows(con, """
         SELECT f.question_id AS question, count(*) AS n,
@@ -179,7 +180,7 @@ def build(min_cves: int) -> dict:
         "window_days": run["window_days"], "corpus": corpus, "min_cves": min_cves, "min_answered": MIN_ANSWERED,
         "graded_checks": GRADED_CHECKS, "cnas": cnas, "lint": lint_summary,
         "coverage": coverage | {"total": corpus_total}, "no_impact_share": no_impact_share, "basis": basis,
-        "spot": spot, "lowest": lowest, "examples": examples,
+        "spot": spot, "lowest": lowest, "examples": examples, "cascade": cascade,
         "shelved": {"bands": bands, "jury": jury, "cwe_not_exact": cwe["not_exact"], "cwe_examples": cwe_examples,
                     "is_vuln": rejected},
     }
