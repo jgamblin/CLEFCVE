@@ -112,6 +112,63 @@ def cvss_section(con, version: str) -> str:
     return "\n".join(out)
 
 
+def severity_section(con) -> str:
+    """Rebuild Clef's full vector per CVE, score it, and compare severity bands with the CNA's."""
+    from cvss import CVSS3, CVSS4  # local: only needed here
+
+    rows = []
+    for version, prefix, metrics in (("3.1", "cvss31", CVSS31), ("4.0", "cvss40", CVSS40)):
+        versions = ("3.0", "3.1") if version == "3.1" else ("4.0",)
+        picks = con.execute(f"""
+            SELECT x.model, x.cve_id, map(list(substr(x.question_id, 8)), list(x.choice)) AS m,
+                   any_value(r.base_score) AS cna_score, any_value(r.vector) AS cna_vector
+            FROM ans x JOIN metrics r ON r.cve_id = x.cve_id AND r.source = 'cna'
+                                     AND r.version IN {versions!r}
+            WHERE x.pack = '{prefix}' GROUP BY x.model, x.cve_id
+        """.replace(",)", ")")).fetchall()
+        for model, cve_id, m, cna_score, cna_vector in picks:
+            if len(m) != len(metrics) or cna_score is None:
+                continue
+            vector = f"CVSS:{version}/" + "/".join(f"{k}:{m[k]}" for k in metrics)
+            try:
+                if version == "3.1":
+                    c = CVSS3(vector)
+                    score, sev = float(c.scores()[0]), c.severities()[0]
+                    ref = CVSS3(cna_vector)
+                    cna_sev = ref.severities()[0]
+                else:
+                    c = CVSS4(vector)
+                    score, sev = float(c.base_score), c.severity
+                    from .lint import cvss4_base_vector
+                    cna_sev = CVSS4(cvss4_base_vector(cna_vector)).severity
+            except Exception:  # malformed CNA vector: covered by lint, skip here
+                continue
+            rows.append((version, model, cve_id, score, sev, cna_score, cna_sev))
+    if not rows:
+        return "### Severity band agreement\n\n_(no data yet)_\n"
+    con.execute("CREATE OR REPLACE TEMP TABLE sev (version VARCHAR, model VARCHAR, cve_id VARCHAR, "
+                "clef_score DOUBLE, clef_sev VARCHAR, cna_score DOUBLE, cna_sev VARCHAR)")
+    con.executemany("INSERT INTO sev VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+    out = ["### Severity band agreement\n",
+           "Clef's metric choices assembled into a full vector and scored, vs the CNA's vector.\n"]
+    out.append(md_table(con, """
+        SELECT version, model, count(*) AS n,
+               round(100.0 * avg((upper(clef_sev) = upper(cna_sev))::INT), 1) AS same_band_pct,
+               round(avg(abs(clef_score - cna_score)), 2) AS mean_abs_score_diff,
+               round(100.0 * avg((clef_score < cna_score - 1)::INT), 1) AS cna_higher_by_1plus_pct,
+               round(100.0 * avg((clef_score > cna_score + 1)::INT), 1) AS cna_lower_by_1plus_pct
+        FROM sev GROUP BY version, model ORDER BY version, model DESC
+    """))
+    out.append("\nBy CNA (Clef 27B, ≥ 5 sampled CVEs). Positive `cna_minus_clef` = CNA scores higher than Clef:\n")
+    out.append(md_table(con, """
+        SELECT assigner, version, count(*) AS n, round(avg(cna_score - clef_score), 2) AS cna_minus_clef,
+               round(100.0 * avg((upper(clef_sev) = upper(cna_sev))::INT), 1) AS same_band_pct
+        FROM sev JOIN cves USING (cve_id) WHERE model = 'clef'
+        GROUP BY assigner, version HAVING count(*) >= 5 ORDER BY cna_minus_clef DESC
+    """))
+    return "\n".join(out)
+
+
 def ssvc_section(con) -> str:
     out = ["## SSVC vs CISA Vulnrichment\n",
            "`baseline` = always predicting CISA's most common value in this sample.\n"]
@@ -298,7 +355,7 @@ def report(con) -> str:
         "| model | pack | CVEs | answers |\n|---|---|---|---|\n" +
         "\n".join(f"| {m} | {p} | {c} | {a} |" for m, p, c, a in counts) + "\n",
         vuln_section(con), description_section(con), cwe_section(con),
-        "## Q4: Is the CVSS correct?\n", cvss_section(con, "3.1"), cvss_section(con, "4.0"),
+        "## Q4: Is the CVSS correct?\n", severity_section(con), cvss_section(con, "3.1"), cvss_section(con, "4.0"),
         ssvc_section(con), rules_section(con), models_section(con),
     ]
     return "\n".join(parts)
