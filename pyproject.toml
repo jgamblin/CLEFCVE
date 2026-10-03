@@ -1,0 +1,22 @@
+[project]
+name = "clefcve"
+version = "0.1.0"
+description = "Audit recent CVE records with Cloudflare's Clef decision models via Ollama"
+requires-python = ">=3.12"
+dependencies = ["duckdb>=1.1", "pyarrow>=17", "pytz"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+clefcve-ingest = "clefcve.ingest:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["clefcve"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
