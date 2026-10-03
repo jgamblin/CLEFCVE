@@ -35,3 +35,9 @@ Answers are cached in `data/answers.duckdb`.
 .venv/bin/python -m clefcve.gold export        # → gold/to_label.csv (150 rows)
 .venv/bin/python -m clefcve.gold import gold/to_label.csv
 ```
+
+## Report card
+```bash
+.venv/bin/python -m clefcve.jury --sample 150     # LLM-jury reference for CVSS/CWE (or ./scripts/jury.sh)
+.venv/bin/python -m clefcve.report_card           # → reports/cna_report_card.html
+```

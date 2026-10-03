@@ -1,0 +1,378 @@
+<title>CVE CNA Report Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: one 1180px column. Summary strip, then the graded table (the page's main object), then Clef's
+     findings as paired panels, then evidence lists and method. Grades read like stamped report-card marks. */
+  :root {
+    --bg: #f3f5f8; --surface: #ffffff; --sunk: #e9edf2; --ink: #141a22; --muted: #586474; --line: #d6dce4;
+    --accent: #1f5bd6; --accent-soft: #e2eafb;
+    --g-a: #1d7f4e; --g-b: #4f8a1f; --g-c: #a26b00; --g-d: #c4540f; --g-f: #c0352b;
+    --g-a-soft: #e0f2e8; --g-b-soft: #ebf3dc; --g-c-soft: #fbefd2; --g-d-soft: #fde5d6; --g-f-soft: #f9e0dd;
+    --clef: #1f5bd6; --cna: #8a5cc4; --flash: #6aa6e8;
+    --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+    --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1218; --surface: #161b23; --sunk: #1d242e; --ink: #e7ebf0; --muted: #98a3b3; --line: #2a323e;
+      --accent: #78a2f5; --accent-soft: #1b2944;
+      --g-a: #4fc488; --g-b: #9bcb5a; --g-c: #e3b347; --g-d: #f08b4f; --g-f: #f2766a;
+      --g-a-soft: #133024; --g-b-soft: #222f12; --g-c-soft: #332712; --g-d-soft: #36200f; --g-f-soft: #3a1714;
+      --clef: #78a2f5; --cna: #b994ea; --flash: #4f86c6; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1218; --surface: #161b23; --sunk: #1d242e; --ink: #e7ebf0; --muted: #98a3b3; --line: #2a323e;
+    --accent: #78a2f5; --accent-soft: #1b2944;
+    --g-a: #4fc488; --g-b: #9bcb5a; --g-c: #e3b347; --g-d: #f08b4f; --g-f: #f2766a;
+    --g-a-soft: #133024; --g-b-soft: #222f12; --g-c-soft: #332712; --g-d-soft: #36200f; --g-f-soft: #3a1714;
+    --clef: #78a2f5; --cna: #b994ea; --flash: #4f86c6; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); margin: 0; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(30px, 5vw, 46px); font-stretch: 78%; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; }
+  h2 { font-size: 24px; font-stretch: 85%; font-weight: 750; margin-bottom: 4px; }
+  h3 { font-size: 16px; font-weight: 700; font-stretch: 95%; }
+  .eyebrow { font: 600 11.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .lede { max-width: 68ch; color: var(--muted); font-size: 16px; margin: 10px 0 0; }
+  .lede b { color: var(--ink); }
+  section { margin-top: 44px; }
+  .sub { color: var(--muted); max-width: 72ch; margin: 2px 0 16px; }
+  .num { font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--mono); font-size: 12.5px; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible, input:focus-visible, th:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Summary strip */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; margin-top: 24px;
+           background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .stat { background: var(--surface); padding: 14px 16px; }
+  .stat .v { font: 800 30px/1.1 var(--display); font-stretch: 80%; font-variant-numeric: tabular-nums; }
+  .stat .k { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .gradebar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+  .gradebar span { display: block; }
+
+  /* Grade stamp */
+  .grade { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+           font: 800 16px var(--display); font-stretch: 90%; border: 2px solid currentColor; transform: rotate(-6deg); }
+  .grade.A { color: var(--g-a); background: var(--g-a-soft); } .grade.B { color: var(--g-b); background: var(--g-b-soft); }
+  .grade.C { color: var(--g-c); background: var(--g-c-soft); } .grade.D { color: var(--g-d); background: var(--g-d-soft); }
+  .grade.F { color: var(--g-f); background: var(--g-f-soft); }
+
+  /* Table */
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .tools input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+                 border-radius: 8px; padding: 7px 10px; width: min(260px, 100%); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: 600 12.5px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+          border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tablebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  thead th { font: 600 11.5px var(--body); text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+             position: sticky; top: 0; background: var(--surface); cursor: pointer; user-select: none; vertical-align: bottom; }
+  thead th.group { cursor: default; text-align: center; border-bottom: 0; padding-bottom: 0; color: var(--ink); }
+  thead th[aria-sort="ascending"]::after { content: " ▲"; } thead th[aria-sort="descending"]::after { content: " ▼"; }
+  tbody tr.row { cursor: pointer; } tbody tr.row:hover { background: var(--sunk); }
+  td.cna { font-weight: 600; }
+  td .bar { display: inline-block; width: 44px; height: 6px; border-radius: 3px; background: var(--sunk);
+            vertical-align: middle; margin-left: 6px; overflow: hidden; }
+  td .bar i { display: block; height: 100%; }
+  .bad { color: var(--g-f); font-weight: 600; } .warn { color: var(--g-c); font-weight: 600; } .dim { color: var(--muted); }
+  tr.detail td { text-align: left; white-space: normal; background: var(--sunk); }
+  .detailgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 28px; padding: 6px 0; }
+  .crow { display: grid; grid-template-columns: 1fr 52px 90px; gap: 8px; align-items: center; font-size: 13px; }
+  .crow .track { height: 7px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+  .crow .track i { display: block; height: 100%; }
+
+  /* Panels */
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+  .panel p { margin: 6px 0 12px; color: var(--muted); font-size: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  svg text { fill: var(--muted); font: 12px var(--body); }
+  svg .lbl { fill: var(--ink); font-weight: 600; }
+  .verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+  .verdict { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .verdict .tag { font: 700 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+  .tag.good { color: var(--g-a); background: var(--g-a-soft); } .tag.mid { color: var(--g-c); background: var(--g-c-soft); }
+  .tag.weak { color: var(--g-f); background: var(--g-f-soft); }
+  .verdict h3 { margin: 8px 0 4px; } .verdict p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  /* Evidence lists */
+  .cases { display: grid; gap: 10px; }
+  .case { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+          display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .case .head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+  .case .desc { color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+  .delta { font: 600 12px var(--mono); background: var(--sunk); border-radius: 4px; padding: 1px 6px; }
+  .delta s { color: var(--g-f); text-decoration-thickness: 1.5px; } .delta b { color: var(--g-a); }
+  details.method { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+  details.method summary { cursor: pointer; font-weight: 700; }
+  details.method li { margin: 4px 0; } details.method p, details.method ul { max-width: 80ch; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 560px) { .stat .v { font-size: 26px; } th, td { padding: 7px 8px; } }
+  @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1>CVE CNA Report Card</h1>
+    <p class="lede" id="lede"></p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section id="verdicts-section">
+    <h2>What Clef can and can't judge</h2>
+    <p class="sub">Cloudflare's Clef decision models, run locally, answered typed questions about each record from its title and description alone. Results are agreement with other sources unless marked otherwise.</p>
+    <div class="verdicts" id="verdicts"></div>
+  </section>
+
+  <section id="grades">
+    <h2>Grades by CNA</h2>
+    <p class="sub" id="gradesSub"></p>
+    <div class="tools">
+      <input id="search" type="search" placeholder="Find a CNA" aria-label="Find a CNA">
+      <div class="chips" id="gradeFilter" role="group" aria-label="Filter by grade"></div>
+    </div>
+    <div class="tablebox"><table id="table"></table></div>
+  </section>
+
+  <section>
+    <h2>Does the description say why it matters?</h2>
+    <p class="sub">Share of each CNA's sampled descriptions where Clef 27B finds no security impact established, and the average clarity it assigns (0 Unusable to 4 Excellent). CNAs with at least 5 sampled CVEs.</p>
+    <div class="pair">
+      <div class="panel"><h3>No security impact stated</h3><p>One CNA accounts for nearly all of it.</p><div id="impactChart"></div></div>
+      <div class="panel"><h3>Description clarity</h3><p>Expected clarity level, Clef 27B.</p><div id="clarityChart"></div></div>
+    </div>
+    <div class="cases" id="impactExamples" style="margin-top:12px"></div>
+  </section>
+
+  <section>
+    <h2>Is the CVSS right?</h2>
+    <p class="sub" id="cvssSub"></p>
+    <div class="pair">
+      <div class="panel"><h3>Who agrees with the LLM jury, per metric</h3>
+        <div class="legend"><span><i style="background:var(--clef)"></i>Clef 27B</span><span><i style="background:var(--cna)"></i>CNA</span><span><i style="background:var(--sunk);border:1px solid var(--line)"></i>Jury unanimous</span></div>
+        <div id="juryChart"></div></div>
+      <div class="panel"><h3>Severity band matches the CNA</h3>
+        <p>Clef's metric answers assembled into a full vector and scored, then compared with the CNA's severity band.</p>
+        <div class="legend"><span><i style="background:var(--clef)"></i>Clef 27B</span><span><i style="background:var(--flash)"></i>Clef Flash</span></div>
+        <div id="bandChart"></div></div>
+    </div>
+    <h3 style="margin:22px 0 8px">Likely CNA scoring errors</h3>
+    <p class="sub">Metrics where Clef 27B and the jury majority agree with each other and not with the CNA.</p>
+    <div class="cases" id="errors"></div>
+  </section>
+
+  <section>
+    <h2>Is the CWE right?</h2>
+    <p class="sub">Clef compared each CNA-assigned CWE with its MITRE definition. These are the assignments it was least willing to accept.</p>
+    <div class="cases" id="cwe"></div>
+  </section>
+
+  <section>
+    <h2>How this was made</h2>
+    <details class="method" id="method"><summary>Data, grading, models, and caveats</summary><div id="methodBody"></div></details>
+  </section>
+  <footer id="footer"></footer>
+</div>
+
+<script>
+const D = /*__DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (v, d = 0) => v == null ? "–" : (100 * v).toFixed(d) + "%";
+const fmt = (n) => Number(n).toLocaleString("en-US");
+const cveLink = (id) => `<a class="mono" href="https://www.cve.org/CVERecord?id=${esc(id)}" target="_blank" rel="noopener noreferrer">${esc(id)}</a>`;
+const GRADE_VAR = { A: "--g-a", B: "--g-b", C: "--g-c", D: "--g-d", F: "--g-f" };
+const short = (s, n = 190) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+
+// ---- Header ----
+const clefQ = D.quality.find((q) => q.model === "clef") || {};
+const flashQ = D.quality.find((q) => q.model === "clef-flash") || {};
+const band31 = (m) => D.bands.find((b) => b.version === "3.1" && b.model === m) || {};
+const counts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+D.cnas.forEach((c) => counts[c.grade]++);
+const linuxNoImpact = D.cnas.find((c) => c.cna === "Linux")?.sample?.no_impact;
+const otherNoImpact = D.cnas.filter((c) => c.cna !== "Linux" && c.sample && c.sample.sample_n >= 5).map((c) => c.sample.no_impact);
+const otherRange = otherNoImpact.length ? `${pct(Math.min(...otherNoImpact))} to ${pct(Math.max(...otherNoImpact))}` : "–";
+$("eyebrow").textContent = `CVE List V5 · ${D.window_days}-day window to ${D.repo_head}`;
+$("lede").innerHTML = `How well CVE Numbering Authorities write their records, graded on <b>${fmt(D.corpus.cves)}</b> CVEs published in the last ${D.window_days} days, with a second opinion from <b>Clef</b>, Cloudflare's local decision models, on a random sample.`;
+$("stats").innerHTML = [
+  [fmt(D.corpus.cves), `CVEs published by ${D.corpus.cnas} CNAs`],
+  [D.cnas.length, `CNAs graded (≥ ${D.min_cves} CVEs)<div class="gradebar">${Object.entries(counts).map(([g, n]) =>
+    `<span title="${g}: ${n}" style="flex:${n};background:var(${GRADE_VAR[g]})"></span>`).join("")}</div>`],
+  [pct(band31("clef").same_band), `of Clef 27B CVSS scores land in the CNA's severity band (Flash ${pct(band31("clef-flash").same_band)})`],
+  [linuxNoImpact != null ? pct(linuxNoImpact) : "–", `of Linux kernel descriptions state no security impact, per Clef`],
+].map(([v, k]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+
+// ---- Verdicts ----
+const jm = D.jury.metrics;
+const clefAhead = jm.filter((m) => m.clef > m.cna + 1e-9).length, tied = jm.filter((m) => Math.abs(m.clef - m.cna) < 1e-9).length;
+$("verdicts").innerHTML = [
+  ["good", "Useful", "Is a security impact stated?", `Separates fix logs from vulnerability descriptions cleanly: Linux at ${pct(linuxNoImpact)}, every other sampled CNA at ${otherRange}.`],
+  ["good", "Useful", "Is the description clear?", `Ranks CNAs plausibly and flags commit messages and marketing boilerplate. Flash is good enough here at a quarter of the cost.`],
+  ["mid", "Second reviewer", "Is the CVSS right?", `Clef 27B is as close to or closer to a ${D.jury.jurors.length}-model jury than the CNA on ${clefAhead + tied} of ${jm.length} metrics, about as good as one strong general model.`],
+  ["mid", "Promising", "Is the CWE right?", `Its rejections are real mistakes, such as an out-of-bounds write filed as a read. The jury couldn't confirm its stricter calls.`],
+  ["weak", "Can't tell", "Is it a vulnerability at all?", `Records later rejected as invalid read just as convincingly as valid ones. The reasons for rejection aren't in the text.`],
+].map(([cls, tag, h, p]) => `<div class="verdict"><span class="tag ${cls}">${tag}</span><h3>${h}</h3><p>${p}</p></div>`).join("");
+
+// ---- Table ----
+const COLS = [
+  { key: "cna", label: "CNA", get: (c) => c.cna, fmt: (c) => esc(c.cna), cls: "cna" },
+  { key: "grade", label: "Grade", get: (c) => c.score, fmt: (c) => `<span class="grade ${c.grade}" title="Score ${c.score}">${c.grade}</span>` },
+  { key: "score", label: "Score", get: (c) => c.score, fmt: (c) => c.score.toFixed(1) },
+  { key: "cves", label: "CVEs", get: (c) => c.cves, fmt: (c) => fmt(c.cves) },
+  { key: "must", label: "MUST fails", get: (c) => c.must_fail, fmt: (c) => `<span class="${c.must_fail > .5 ? "bad" : c.must_fail > .05 ? "warn" : ""}">${pct(c.must_fail)}</span>` },
+  { key: "cwe", label: "CWE ID", get: (c) => c.checks.cwe_structured, fmt: (c) => barPct(c.checks.cwe_structured) },
+  { key: "fix", label: "Fixed ver.", get: (c) => c.checks.fixed_version, fmt: (c) => barPct(c.checks.fixed_version) },
+  { key: "uniq", label: "Unique desc.", get: (c) => c.checks.desc_unique, fmt: (c) => barPct(c.checks.desc_unique) },
+  { key: "cvss", label: "Has CVSS", get: (c) => c.has_cvss, fmt: (c) => barPct(c.has_cvss) },
+  { key: "clarity", label: "Clarity", group: true, get: (c) => c.sample?.clarity, fmt: (c) => c.sample ? c.sample.clarity.toFixed(1) : `<span class="dim">–</span>` },
+  { key: "noimpact", label: "No impact", group: true, get: (c) => c.sample?.no_impact, fmt: (c) => c.sample ? `<span class="${c.sample.no_impact > .5 ? "bad" : ""}">${pct(c.sample.no_impact)}</span>` : `<span class="dim">–</span>` },
+  { key: "band", label: "CVSS band", group: true, get: (c) => c.sample?.same_band, fmt: (c) => c.sample?.same_band != null ? pct(c.sample.same_band) : `<span class="dim">–</span>` },
+];
+function barPct(v) {
+  if (v == null) return `<span class="dim">–</span>`;
+  const color = v >= .95 ? "--g-a" : v >= .8 ? "--g-b" : v >= .6 ? "--g-c" : "--g-f";
+  return `${pct(v)}<span class="bar"><i style="width:${(100 * v).toFixed(0)}%;background:var(${color})"></i></span>`;
+}
+let sortKey = "cves", sortDir = -1, filterGrade = null, query = "", open = new Set();
+$("gradesSub").innerHTML = `Grades use only deterministic checks against CNA Operational Rules 4.1.0 over every record each CNA published. The score is the average pass rate of ${Object.keys(D.graded_checks).length} checks; A ≥ 95, B ≥ 88, C ≥ 80, D ≥ 70. The last three columns come from Clef 27B on a random sample and appear for CNAs with at least 5 sampled CVEs. Click a row for the check breakdown.`;
+$("gradeFilter").innerHTML = ["All", "A", "B", "C", "D", "F"].map((g) =>
+  `<button class="chip" data-g="${g}" aria-pressed="${g === "All"}">${g === "All" ? "All grades" : `${g} · ${counts[g]}`}</button>`).join("");
+$("gradeFilter").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  filterGrade = b.dataset.g === "All" ? null : b.dataset.g;
+  [...$("gradeFilter").children].forEach((x) => x.setAttribute("aria-pressed", x === b));
+  renderTable();
+});
+$("search").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); renderTable(); });
+
+function detailRow(c) {
+  const checks = Object.entries(D.graded_checks).map(([k, label]) => {
+    const v = c.checks[k];
+    const color = v == null ? "--line" : v >= .95 ? "--g-a" : v >= .8 ? "--g-b" : v >= .6 ? "--g-c" : "--g-f";
+    return `<div class="crow"><span>${esc(label)}</span><span class="num" style="text-align:right">${pct(v)}</span>
+      <span class="track"><i style="width:${v == null ? 0 : (100 * v).toFixed(0)}%;background:var(${color})"></i></span></div>`;
+  }).join("");
+  const s = c.sample;
+  const sample = s ? `<div class="crow"><span>Sampled CVEs (Clef 27B)</span><span class="num" style="text-align:right">${s.sample_n}</span><span></span></div>
+      <div class="crow"><span>Descriptions that read as commit messages</span><span class="num" style="text-align:right">${pct(s.commit_msg)}</span><span></span></div>
+      ${s.cna_minus_clef != null ? `<div class="crow"><span>CNA score minus Clef score (v3.1, ${s.sev_n} CVEs)</span><span class="num" style="text-align:right">${s.cna_minus_clef > 0 ? "+" : ""}${s.cna_minus_clef.toFixed(1)}</span><span></span></div>` : ""}`
+    : `<div class="dim">Too few sampled CVEs for Clef columns.</div>`;
+  return `<tr class="detail"><td colspan="${COLS.length}"><div class="detailgrid"><div>${checks}</div><div>
+    <div class="crow"><span>CVSS score doesn't match its vector</span><span class="num" style="text-align:right">${c.cvss_mismatches}</span><span></span></div>${sample}</div></div></td></tr>`;
+}
+
+function renderTable() {
+  const col = COLS.find((c) => c.key === sortKey);
+  const list = D.cnas.filter((c) => (!filterGrade || c.grade === filterGrade) && (!query || c.cna.toLowerCase().includes(query)))
+    .sort((a, b) => {
+      const x = col.get(a), y = col.get(b);
+      if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+      return (typeof x === "string" ? x.localeCompare(y) : x - y) * sortDir;
+    });
+  const nGroup = COLS.filter((c) => c.group).length;
+  $("table").innerHTML = `<thead><tr><th class="group" colspan="${COLS.length - nGroup}"></th><th class="group" colspan="${nGroup}">Clef 27B · sample</th></tr>
+    <tr>${COLS.map((c) => `<th tabindex="0" data-k="${c.key}" aria-sort="${c.key === sortKey ? (sortDir > 0 ? "ascending" : "descending") : "none"}">${c.label}</th>`).join("")}</tr></thead>
+    <tbody>${list.map((c) => `<tr class="row" data-cna="${esc(c.cna)}" tabindex="0" aria-expanded="${open.has(c.cna)}">${COLS.map((k) =>
+      `<td class="num ${k.cls || ""}">${k.fmt(c)}</td>`).join("")}</tr>${open.has(c.cna) ? detailRow(c) : ""}`).join("")
+      || `<tr><td colspan="${COLS.length}" class="dim">No CNA matches.</td></tr>`}</tbody>`;
+}
+$("table").addEventListener("click", (e) => {
+  const th = e.target.closest("th[data-k]");
+  if (th) { sortDir = sortKey === th.dataset.k ? -sortDir : (th.dataset.k === "cna" ? 1 : -1); sortKey = th.dataset.k; return renderTable(); }
+  const tr = e.target.closest("tr.row");
+  if (tr) { const k = tr.dataset.cna; open.has(k) ? open.delete(k) : open.add(k); renderTable(); }
+});
+$("table").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.target.click(); } });
+renderTable();
+
+// ---- Charts (inline SVG, one scale per chart) ----
+function hbars(el, rows, { max, fmtV, colorOf }) {
+  const W = 520, rowH = 24, left = 110, right = 56, H = rows.length * rowH + 22;
+  const x = (v) => left + (W - left - right) * v / max;
+  const ticks = [0, .25, .5, .75, 1].map((t) => t * max);
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="bar chart">
+    ${ticks.map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 18}" stroke="var(--line)"/>
+      <text x="${x(t)}" y="${H - 4}" text-anchor="middle">${fmtV(t, true)}</text>`).join("")}
+    ${rows.map((r, i) => `<text class="lbl" x="${left - 8}" y="${i * rowH + 16}" text-anchor="end">${esc(r.label)}</text>
+      <rect x="${left}" y="${i * rowH + 5}" width="${Math.max(1.5, x(r.value) - left)}" height="${rowH - 10}" rx="3" fill="var(${colorOf(r)})"/>
+      <text x="${x(r.value) + 6}" y="${i * rowH + 16}">${fmtV(r.value)}</text>`).join("")}
+  </svg>`;
+}
+const sampled = D.cnas.filter((c) => c.sample && c.sample.sample_n >= 5);
+hbars($("impactChart"), sampled.map((c) => ({ label: c.cna, value: c.sample.no_impact })).sort((a, b) => b.value - a.value),
+  { max: 1, fmtV: (v) => pct(v), colorOf: (r) => r.value > .5 ? "--g-f" : r.value > .05 ? "--g-c" : "--g-a" });
+hbars($("clarityChart"), sampled.map((c) => ({ label: c.cna, value: c.sample.clarity })).sort((a, b) => b.value - a.value),
+  { max: 4, fmtV: (v, tick) => tick ? String(v) : v.toFixed(1), colorOf: (r) => r.value >= 3 ? "--g-a" : r.value >= 2.5 ? "--g-b" : r.value >= 2 ? "--g-c" : "--g-f" });
+$("impactExamples").innerHTML = D.no_impact_examples.slice(0, 2).map((e) => `<div class="case"><div class="head">${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
+  <span class="delta">P(impact stated) ${e.p_impact.toFixed(2)}</span></div><div class="desc">${esc(short(e.description, 260))}</div></div>`).join("");
+
+// Jury dumbbell: per metric, Clef vs CNA agreement with the jury majority; faint bar = jury unanimity.
+(function juryChart() {
+  const el = $("juryChart");
+  if (!jm.length) { el.innerHTML = `<p>No jury results yet.</p>`; return; }
+  const W = 520, rowH = 30, left = 40, right = 20, H = jm.length * rowH + 24;
+  const x = (v) => left + (W - left - right) * v;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Clef and CNA agreement with the jury by CVSS metric">
+    ${[0, .25, .5, .75, 1].map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 20}" stroke="var(--line)"/>
+      <text x="${x(t)}" y="${H - 5}" text-anchor="middle">${pct(t)}</text>`).join("")}
+    ${jm.map((m, i) => { const y = i * rowH + 15; return `
+      <rect x="${left}" y="${y - 9}" width="${x(m.unanimous) - left}" height="18" rx="3" fill="var(--sunk)"/>
+      <text class="lbl" x="${left - 8}" y="${y + 4}" text-anchor="end" style="font-family:var(--mono)">${m.metric}</text>
+      <line x1="${x(Math.min(m.clef, m.cna))}" x2="${x(Math.max(m.clef, m.cna))}" y1="${y}" y2="${y}" stroke="var(--muted)" stroke-width="1.5"/>
+      <circle cx="${x(m.cna)}" cy="${y}" r="6" fill="var(--cna)"><title>CNA ${pct(m.cna)} (n=${m.n})</title></circle>
+      <circle cx="${x(m.clef)}" cy="${y}" r="6" fill="var(--clef)"><title>Clef 27B ${pct(m.clef)} (n=${m.n})</title></circle>`; }).join("")}
+  </svg>`;
+})();
+$("cvssSub").textContent = D.jury.n
+  ? `A jury of ${D.jury.jurors.length} general-purpose local models (${D.jury.jurors.map((j) => j.split(":")[0]).join(", ")}) scored CVSS v3.1 for ${D.jury.n} sampled CVEs from the same text Clef saw. Its majority vote is the reference. Clef is as close or closer than the CNA on ${clefAhead + tied} of ${jm.length} metrics. The jury itself rarely agrees unanimously on impact (C, I, A) or Scope, so treat those rows with care.`
+  : "";
+
+// Severity band bars
+(function bandChart() {
+  const rows = ["3.1", "4.0"].flatMap((v) => ["clef", "clef-flash"].map((m) => ({ v, m, b: D.bands.find((x) => x.version === v && x.model === m) })))
+    .filter((r) => r.b);
+  const W = 520, rowH = 34, left = 120, right = 60, H = rows.length * rowH + 24;
+  const x = (v) => left + (W - left - right) * v;
+  $("bandChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Severity band agreement">
+    ${[0, .25, .5, .75, 1].map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 20}" stroke="var(--line)"/>
+      <text x="${x(t)}" y="${H - 5}" text-anchor="middle">${pct(t)}</text>`).join("")}
+    ${rows.map((r, i) => `<text class="lbl" x="${left - 8}" y="${i * rowH + 21}" text-anchor="end">CVSS v${r.v} · ${r.m === "clef" ? "27B" : "Flash"}</text>
+      <rect x="${left}" y="${i * rowH + 8}" width="${x(r.b.same_band) - left}" height="18" rx="3" fill="var(${r.m === "clef" ? "--clef" : "--flash"})"/>
+      <text x="${x(r.b.same_band) + 6}" y="${i * rowH + 21}">${pct(r.b.same_band)} · n=${r.b.n}</text>`).join("")}
+  </svg><p style="margin:8px 0 0">Mean score difference: 27B ${band31("clef").mean_abs_diff?.toFixed(1)} points, Flash ${band31("clef-flash").mean_abs_diff?.toFixed(1)} (v3.1). Misses fall about evenly above and below the CNA.</p>`;
+})();
+
+$("errors").innerHTML = D.jury.likely_errors.map((e) => `<div class="case"><div class="head">${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
+  ${e.changes.map((c) => `<span class="delta">${esc(c.metric)} <s>${esc(c.cna)}</s> → <b>${esc(c.ref)}</b></span>`).join("")}</div>
+  <div class="desc">${esc(short(e.description))}</div></div>`).join("") || `<p class="sub">No jury results yet.</p>`;
+
+$("cwe").innerHTML = D.cwe_rejections.map((r) => `<div class="case"><div class="head">${cveLink(r.cve_id)}<span class="eyebrow">${esc(r.cna)}</span>
+  <span class="delta">${esc(r.cwe)} ${esc(r.name || "")}</span><span class="delta">fit: ${esc((r.fit || "").replace(/_/g, " "))}</span>
+  <span class="delta">P(accept) ${r.p_accept.toFixed(2)}</span></div><div class="desc">${esc(short(r.description))}</div></div>`).join("");
+
+// ---- Method ----
+const lintTop = D.lint.slice(0, 8).map((l) => `<li><span class="mono">${esc(l.check_id)}</span> (${esc(l.rule)}, ${esc(l.level)}): ${fmt(l.flagged)} of ${fmt(l.evaluated)} records flagged</li>`).join("");
+$("methodBody").innerHTML = `
+  <p><b>Data.</b> Every CVE record published in the ${D.window_days} days to ${D.repo_head} from the CVE List V5 repository (commit <span class="mono">${esc(D.repo_sha)}</span>), plus ${fmt(D.corpus.rejected)} records rejected in that window whose original text was recovered from git history.</p>
+  <p><b>Grades.</b> Deterministic checks only, over every record a CNA published. Score = average pass rate of these checks:</p>
+  <ul>${Object.values(D.graded_checks).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>
+  <p>Most-flagged checks across the corpus:</p><ul>${lintTop}</ul>
+  <p><b>Clef.</b> Clef 27B and Clef Flash (Cloudflare, via Ollama's decision endpoint) answered typed questions from each record's title and description, never seeing the assigned CVSS. Sample: ${D.sample_n} random CVEs from the last ${D.dev_days} days for CVSS and CWE; ${clefQ.n ?? "–"} CVEs for the description questions, including a CNA-stratified labeling set. Median time per CVE for the 19 description questions: 27B ${(clefQ.ms / 1000).toFixed(1)} s, Flash ${(flashQ.ms / 1000).toFixed(1)} s.</p>
+  <p><b>Jury.</b> ${esc(D.jury.jurors.join(", "))}. Qwen 3.8 was left out because Clef is fine-tuned from it. Each juror received the same impact guidance as Clef's CVSS questions, so the jury and Clef may share biases.</p>
+  <p><b>Caveats.</b> Apart from the hand-labeled set, every Clef number here is agreement with another source, not accuracy. Clef-based columns rest on small per-CNA samples. A low grade measures record completeness against the rules, not the quality of a CNA's security work.</p>`;
+$("footer").textContent = `Generated ${D.generated} by clefcve.report_card.`;
+</script>
