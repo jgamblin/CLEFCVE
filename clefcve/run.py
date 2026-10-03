@@ -1,8 +1,8 @@
 """Stage 3: ask a question pack about a set of CVEs and cache the answers in DuckDB.
 
 Usage:
-  python -m clefcve.run --pack assess --model clef-flash --sample 300 [--include-rejected]
-  python -m clefcve.run --pack cwe_verify --model clef --ids CVE-2026-1731,CVE-2026-12037
+  python -m clefcve.run --pack description --model clef-flash --slice all
+  python -m clefcve.run --pack experimental/cvss31 --model clef --sample 300
 
 Answers are cached per (cve, item, record hash, model, question, question hash): rerunning only asks
 what is missing, and editing a question's wording re-asks just that question.
@@ -143,9 +143,10 @@ def run(corpus_db, answers_db, pack: dict, model: str, cves: list[dict], limit_s
 
     _write(answers_db)  # ensure tables exist
     con = connect_retry(answers_db, read_only=True)
+    # Keyed by question hash, not pack name, so moving a question between packs keeps its cached answers.
     have = set(con.execute(
-        "SELECT cve_id, item, record_sha256, question_id, question_hash FROM answers WHERE model = ? AND pack = ?",
-        [model, pack["pack"]]).fetchall())
+        "SELECT cve_id, item, record_sha256, question_id, question_hash FROM answers WHERE model = ?",
+        [model]).fetchall())
     con.close()
     jobs = []
     for cve in cves:

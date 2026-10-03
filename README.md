@@ -1,43 +1,43 @@
 # CLEFCVE
-Audit recently published CVE records with Cloudflare's Clef / Clef Flash decision models running locally in Ollama. See [PLAN.md](PLAN.md).
+Grades CVE Numbering Authorities on how well they write CVE records, using two things:
+
+1. **Rule checks** (no model): 23 deterministic checks against the CVE Program's CNA Operational Rules 4.1.0,
+   run on every record. These produce the grades.
+2. **Two questions for Cloudflare's Clef decision model**, run locally in Ollama on each description:
+   - *Does the description establish a security impact?* (and how: stated outright, implied by a vuln class, or only describes a bug fix)
+   - *How clear is it for a defender?* (0 Unusable to 4 Excellent)
+
+Clef Flash (9B) runs the whole corpus; Clef 27B checks a sample. Other questions we tried (CVSS, CWE, "is this a
+vulnerability", SSVC) are shelved in [`questions/experimental/`](questions/experimental/); see [PLAN.md](PLAN.md)
+for what we learned.
 
 ## Setup
 ```bash
 python3 -m venv .venv
 PIP_USER=0 .venv/bin/pip install --no-user -e '.[dev]'
 ```
-Requires Ollama ≥ 0.35.1 with `clef` and `clef-flash` pulled, and a local clone of [CVEProject/cvelistV5](https://github.com/CVEProject/cvelistV5) (default `~/Data/cvelistV5`, override with `CLEFCVE_REPO`).
+Requires Ollama ≥ 0.35.1 with `clef-flash` (and optionally `clef`) pulled, and a local clone of
+[CVEProject/cvelistV5](https://github.com/CVEProject/cvelistV5) (default `~/Data/cvelistV5`, override with `CLEFCVE_REPO`).
+The rule checks need the CWE catalog in `data/ref/` (`curl -sSLO https://cwe.mitre.org/data/xml/cwec_latest.xml.zip && unzip` there).
 
-## Stage 1 — ingest
+## Run
 ```bash
 git -C ~/Data/cvelistV5 pull
-.venv/bin/python -m clefcve.ingest --days 60 --dev-days 30
+.venv/bin/python -m clefcve.ingest              # last 60 days -> data/clefcve.duckdb (~10 s)
+.venv/bin/python -m clefcve.lint                # rule checks (~3 s)
+./scripts/full_corpus.sh                        # Clef Flash on every description; rerun until 0 requests remain
+.venv/bin/python -m clefcve.report_card         # -> reports/cna_report_card.html
+.venv/bin/python -m clefcve.evaluate            # -> data/reports/results.md  (add --experimental for the shelved work)
 ```
-Writes `data/clefcve.duckdb` (override with `--db` or `CLEFCVE_DB`). Rebuilt from scratch on each run.
+Answers are cached in `data/answers.duckdb` by question wording, so reruns only ask what changed.
 
-## Stage 2 — deterministic lint (no model)
-```bash
-.venv/bin/python -m clefcve.lint
-```
-Needs the CWE catalog in `data/ref/` (`curl -sSLO https://cwe.mitre.org/data/xml/cwec_latest.xml.zip && unzip` there). 23 checks mapped to CNA Operational Rules 4.1.0 → `lint` table.
+## Checking Clef
+- `MODELS=clef ./scripts/run_gold.sh` and `python -m clefcve.run --pack description --model clef --sample 300`: Clef 27B spot checks.
+- `python -m clefcve.labeler`: a local web app for hand-labeling the 150-CVE gold set (`gold/`) on the same two questions.
 
-## Stage 3+ — ask Clef
-Question packs live in [`questions/`](questions/) (YAML; editing a question's wording re-asks only that question).
+## Experimental (shelved)
 ```bash
-.venv/bin/python -m clefcve.run --pack quality --model clef --sample 300 --include-rejected
-SAMPLE=300 ./scripts/first_results.sh          # every pack, Flash then Clef
-.venv/bin/python -m clefcve.evaluate           # → data/reports/first_results.md
-```
-Answers are cached in `data/answers.duckdb`.
-
-## Gold set
-```bash
-.venv/bin/python -m clefcve.gold export        # → gold/to_label.csv (150 rows)
-.venv/bin/python -m clefcve.gold import gold/to_label.csv
-```
-
-## Report card
-```bash
-.venv/bin/python -m clefcve.jury --sample 150     # LLM-jury reference for CVSS/CWE (or ./scripts/jury.sh)
-.venv/bin/python -m clefcve.report_card           # → reports/cna_report_card.html
+.venv/bin/python -m clefcve.run --pack experimental/cvss31 --model clef --sample 300
+.venv/bin/python -m clefcve.jury --sample 150   # 5-model LLM jury as a CVSS/CWE reference
+.venv/bin/python -m clefcve.evaluate --experimental
 ```

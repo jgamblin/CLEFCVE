@@ -139,6 +139,19 @@ Full tables: `reports/2026-10-03-first-results.md`. Regenerate with `python -m c
   - **The jury doesn't help with CWE.** Its preferred CWE equals the CNA's 95% of the time, so it can't confirm or refute Clef's harsher "too general" calls (21%).
   - **Caveat:** the jurors got the same impact-inference guidance as Clef's CVSS questions, so they may share some biases with Clef.
 
+### Reshaped to two questions (2026-10-03)
+
+The tool now does three things:
+- **Rule checks:** the grades.
+- **"Does the description establish a security impact?"** (plus `impact_basis`).
+- **"How clear is the description?"**
+
+These run with **Clef Flash over the whole corpus** (`scripts/full_corpus.sh`, random order, cached, in chunks under 2 hours). Clef 27B is the spot check. Flash agrees with 27B on 94% of security-impact answers (it's slightly stricter) and on 89% of clarity answers (within half a level).
+
+The commit-message flag was dropped from the core: Flash flagged ordinary Apple and GitHub advisories as commit messages, and `impact_basis = bug_fix_only` already covers fix logs.
+
+CVSS, CWE, SSVC, the jury and the other judgment questions moved to `questions/experimental/`. Run `evaluate --experimental` for them.
+
 ### Next
 1. Finish hand-labeling Q1 and clarity in the labeling app.
 2. Full 60-day runs: Flash for the quality pack (Q1 and clarity, about 24 h); Clef 27B for CVSS and CWE only on CVEs that lint or Flash flags.

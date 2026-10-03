@@ -3,7 +3,8 @@
 Usage: python -m clefcve.report_card [--min-cves 25]
 
 Grades come only from deterministic checks over the full 60-day corpus, so every CNA is graded on all its
-records. Clef-based columns come from the random sample and are shown only where a CNA has ≥ 5 sampled CVEs.
+records. The two Clef columns (security impact stated, clarity) come from Clef Flash over the corpus, answered in
+random order; Clef 27B on a random sample is the spot check. The shelved CVSS/CWE experiments get a short summary.
 """
 
 import argparse
@@ -12,7 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
-from .evaluate import connect, cvss_section, load_jury, severity_section
+from .evaluate import INVALID_REASON_SQL
+from .evaluate import CORPUS_MODEL, connect, load_jury, severity_section
 
 TEMPLATE = Path(__file__).with_name("report_card.html")
 OUT = config.PROJECT_ROOT / "reports" / "cna_report_card.html"
@@ -29,6 +31,7 @@ GRADED_CHECKS = {
     "cvss_score_matches": "CVSS score matches its vector",
 }
 GRADES = [(95, "A"), (88, "B"), (80, "C"), (70, "D"), (0, "F")]
+MIN_ANSWERED = 10  # Clef columns need at least this many answered CVEs for a CNA
 
 
 def rows(con, sql, params=None):
@@ -68,26 +71,19 @@ def build(min_cves: int) -> dict:
         c["score"] = round(100 * sum(c["checks"].values()) / len(c["checks"]), 1)
         c["grade"] = next(g for t, g in GRADES if c["score"] >= t)
 
-    # Clef-based columns from the sample (Clef 27B), only where a CNA has enough sampled CVEs.
-    severity_section(con)  # builds temp table `sev`
-    sample = {r["cna"]: r for r in rows(con, """
-        WITH q AS (
-            SELECT assigner AS cna, count(DISTINCT cve_id) AS sample_n,
-                   avg(score) FILTER (question_id = 'desc_clarity') AS clarity,
-                   avg((p_true < 0.5)::INT) FILTER (question_id = 'security_impact_stated') AS no_impact,
-                   avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_commit_message') AS commit_msg
-            FROM ans JOIN cves USING (cve_id)
-            WHERE model = 'clef' AND pack = 'quality' AND state = 'PUBLISHED' GROUP BY 1),
-        s AS (SELECT assigner AS cna, count(*) AS sev_n, avg((upper(clef_sev) = upper(cna_sev))::INT) AS same_band,
-                     avg(cna_score - clef_score) AS cna_minus_clef
-              FROM sev JOIN cves USING (cve_id) WHERE model = 'clef' AND version = '3.1' GROUP BY 1)
-        SELECT q.*, s.sev_n, s.same_band, s.cna_minus_clef FROM q LEFT JOIN s USING (cna)
-    """)}
+    # Clef columns from the corpus run, where a CNA has enough answered CVEs.
+    clef = {r["cna"]: r for r in rows(con, f"""
+        SELECT assigner AS cna, count(DISTINCT cve_id) AS answered,
+               avg(score) FILTER (question_id = 'desc_clarity') AS clarity,
+               avg((p_true < 0.5)::INT) FILTER (question_id = 'security_impact_stated') AS no_impact,
+               avg((choice = 'bug_fix_only')::INT) FILTER (question_id = 'impact_basis') AS bug_fix_only
+        FROM ans JOIN cves USING (cve_id)
+        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
+          AND question_id IN ('desc_clarity', 'security_impact_stated', 'impact_basis')
+        GROUP BY 1""")}
     for c in cnas:
-        s = sample.get(c["cna"])
-        c["sample"] = ({k: s[k] for k in ("sample_n", "clarity", "no_impact", "commit_msg")}
-                       | ({"sev_n": s["sev_n"], "same_band": s["same_band"], "cna_minus_clef": s["cna_minus_clef"]}
-                          if (s["sev_n"] or 0) >= 5 else {})) if s and s["sample_n"] >= 5 else None
+        r = clef.get(c["cna"])
+        c["clef"] = r if r and r["answered"] >= MIN_ANSWERED else None
     cnas.sort(key=lambda c: -c["cves"])
 
     corpus = rows(con, """
@@ -99,64 +95,93 @@ def build(min_cves: int) -> dict:
                count(*) FILTER (status IN ('pass', 'fail', 'warn')) AS evaluated
         FROM lint GROUP BY ALL HAVING flagged > 0 ORDER BY flagged DESC""")
 
-    # Q1 / quality overall by model; CVSS band agreement by model.
-    quality = rows(con, """
-        SELECT model, count(DISTINCT cve_id) AS n,
-               avg(score) FILTER (question_id = 'desc_clarity') AS clarity,
+    coverage = rows(con, f"""
+        SELECT count(DISTINCT cve_id) AS answered,
                avg((p_true < 0.5)::INT) FILTER (question_id = 'security_impact_stated') AS no_impact,
-               avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_commit_message') AS commit_msg,
-               median(request_ms) FILTER (question_id = 'desc_clarity') AS ms
-        FROM ans JOIN cves USING (cve_id) WHERE pack = 'quality' AND state = 'PUBLISHED' GROUP BY model""")
-    bands = rows(con, """
-        SELECT version, model, count(*) AS n, avg((upper(clef_sev) = upper(cna_sev))::INT) AS same_band,
-               avg(abs(clef_score - cna_score)) AS mean_abs_diff
-        FROM sev GROUP BY ALL ORDER BY version, model""")
+               avg(score) FILTER (question_id = 'desc_clarity') AS clarity,
+               avg((score < 1.5)::INT) FILTER (question_id = 'desc_clarity') AS poor,
+               avg((score >= 2.5)::INT) FILTER (question_id = 'desc_clarity') AS good,
+               median(request_ms) AS ms
+        FROM ans JOIN cves USING (cve_id) WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
+          AND question_id IN ('desc_clarity', 'security_impact_stated')""")[0]
+    # Share of all no-impact descriptions that come from each CNA.
+    no_impact_share = rows(con, f"""
+        SELECT assigner AS cna, count(*) AS n FROM ans JOIN cves USING (cve_id)
+        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED' AND question_id = 'security_impact_stated'
+          AND p_true < 0.5 GROUP BY 1 ORDER BY n DESC LIMIT 5""")
+    basis = rows(con, f"""
+        SELECT choice AS basis, count(*) AS n FROM ans JOIN cves USING (cve_id)
+        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED' AND question_id = 'impact_basis'
+        GROUP BY 1 ORDER BY n DESC""")
+    # Spot check: Clef 27B vs Flash on the same CVEs.
+    spot = rows(con, """
+        SELECT f.question_id AS question, count(*) AS n,
+               avg(CASE WHEN f.type = 'noul' THEN ((f.p_true >= 0.5) = (c.p_true >= 0.5))::INT
+                        ELSE (abs(f.score - c.score) < 0.5)::INT END) AS agree,
+               avg(((f.p_true < 0.5) AND (c.p_true >= 0.5))::INT) AS flash_stricter
+        FROM ans f JOIN ans c USING (cve_id, item, question_id)
+        WHERE f.model = 'clef-flash' AND c.model = 'clef' AND f.question_id IN ('security_impact_stated', 'desc_clarity')
+        GROUP BY 1""")
+    rejected = rows(con, f"""
+        SELECT avg(p_true) FILTER (state = 'PUBLISHED') AS published,
+               avg(p_true) FILTER (state = 'REJECTED' AND {INVALID_REASON_SQL}) AS rejected_invalid
+        FROM ans JOIN cves USING (cve_id) WHERE model = 'clef' AND question_id = 'is_vuln'""")[0]
+    # One clear, impact-stating description and one fix log with no stated impact, as the page's examples.
+    examples = rows(con, f"""
+        WITH a AS (
+            SELECT cve_id, max(p_true) FILTER (question_id = 'security_impact_stated') AS p_impact,
+                   max(score) FILTER (question_id = 'desc_clarity') AS clarity
+            FROM ans WHERE model = '{CORPUS_MODEL}' GROUP BY 1)
+        (SELECT 'good' AS kind, cve_id, assigner AS cna, p_impact, clarity, description FROM a JOIN cves USING (cve_id)
+         WHERE state = 'PUBLISHED' AND length(description) BETWEEN 200 AND 420 ORDER BY clarity DESC, p_impact DESC LIMIT 1)
+        UNION ALL
+        (SELECT 'weak', cve_id, assigner, p_impact, clarity, description FROM a JOIN cves USING (cve_id)
+         WHERE state = 'PUBLISHED' AND assigner = 'Linux' AND length(description) < 600 ORDER BY p_impact LIMIT 1)""")
+    lowest = rows(con, f"""
+        SELECT cve_id, assigner AS cna, score AS clarity, description FROM ans JOIN cves USING (cve_id)
+        WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED' AND question_id = 'desc_clarity'
+          AND assigner <> 'Linux' ORDER BY score LIMIT 3""")
 
-    # Jury: Clef vs CNA closeness per metric, on CVEs that have all three.
+    # Shelved experiments: headline numbers only.
+    severity_section(con)  # builds temp table `sev`
+    bands = rows(con, """
+        SELECT model, count(*) AS n, avg((upper(clef_sev) = upper(cna_sev))::INT) AS same_band
+        FROM sev WHERE version = '3.1' GROUP BY model""")
     jury_n = load_jury(con)
-    jury_metrics, likely_errors, jurors = [], [], []
+    jury = {"n": jury_n}
     if jury_n:
         from .evaluate import jury_section
-        jury_section(con)  # builds temp table jury_cmp
-        jurors = [r["juror"] for r in rows(con, "SELECT DISTINCT juror FROM jury_votes ORDER BY 1")]
-        jury_metrics = rows(con, """
-            SELECT field AS metric, count(*) AS n, avg((clef = jury)::INT) AS clef, avg((cna = jury)::INT) AS cna,
-                   (SELECT avg((votes = jurors)::INT) FROM jury_cons c WHERE c.field = j.field) AS unanimous
-            FROM jury_cmp j WHERE clef IS NOT NULL AND cna IS NOT NULL GROUP BY field""")
-        order = ["AV", "AC", "PR", "UI", "S", "C", "I", "A"]
-        jury_metrics.sort(key=lambda r: order.index(r["metric"]))
-        likely_errors = rows(con, """
-            SELECT j.cve_id, cv.assigner AS cna, list(struct_pack(metric := j.field, cna := j.cna, ref := j.jury)
-                                                ORDER BY j.field) AS changes, cv.description
-            FROM jury_cmp j JOIN cves cv USING (cve_id)
-            WHERE j.clef = j.jury AND j.cna IS NOT NULL AND j.cna <> j.jury
-            GROUP BY j.cve_id, cv.assigner, cv.description ORDER BY count(*) DESC, j.cve_id LIMIT 15""")
-
-    cwe_fit = rows(con, """
-        SELECT model, choice AS fit, count(*) AS n FROM ans WHERE question_id = 'cwe_fit'
-        GROUP BY ALL ORDER BY model, n DESC""")
-    cwe_rejections = rows(con, """
-        SELECT x.cve_id, cv.assigner AS cna, x.item AS cwe, k.name, x.p_true AS p_accept,
-               (SELECT choice FROM ans f WHERE f.cve_id = x.cve_id AND f.item = x.item AND f.model = 'clef'
-                AND f.question_id = 'cwe_fit') AS fit, cv.description
+        jury_section(con)  # builds temp tables jury_cmp, jury_votes
+        m = rows(con, """
+            SELECT count(*) FILTER (clef >= cna) AS clef_tied_or_ahead, count(*) AS metrics, avg(clef) AS clef_avg
+            FROM (SELECT field, avg((clef = jury)::INT) AS clef, avg((cna = jury)::INT) AS cna
+                  FROM jury_cmp WHERE clef IS NOT NULL AND cna IS NOT NULL GROUP BY field)""")[0]
+        loo = rows(con, """
+            WITH loo AS (
+                SELECT v.juror, v.value, (SELECT mode(o.value) FROM jury_votes o WHERE o.cve_id = v.cve_id
+                                          AND o.field = v.field AND o.juror <> v.juror) AS others
+                FROM jury_votes v WHERE v.field IN ('AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'))
+            SELECT min(a) AS lo, max(a) AS hi FROM (SELECT juror, avg((value = others)::INT) AS a FROM loo GROUP BY 1)""")[0]
+        jurors = [r["juror"].split(":")[0] for r in rows(con, "SELECT DISTINCT juror FROM jury_votes ORDER BY 1")]
+        jury |= m | {"juror_lo": loo["lo"], "juror_hi": loo["hi"], "jurors": jurors}
+    cwe = rows(con, """
+        SELECT avg((choice <> 'exact')::INT) AS not_exact FROM ans WHERE question_id = 'cwe_fit' AND model = 'clef'""")[0]
+    cwe_examples = rows(con, """
+        SELECT x.cve_id, cv.assigner AS cna, x.item AS cwe, k.name, cv.description
         FROM ans x JOIN cves cv USING (cve_id) LEFT JOIN cwe_catalog k ON k.cwe_id = x.item
-        WHERE x.question_id = 'cwe_acceptable' AND x.model = 'clef' ORDER BY x.p_true LIMIT 10""")
-    no_impact_examples = rows(con, """
-        SELECT cve_id, assigner AS cna, p_true AS p_impact, description
-        FROM ans JOIN cves USING (cve_id)
-        WHERE question_id = 'security_impact_stated' AND model = 'clef' AND state = 'PUBLISHED'
-        ORDER BY p_true LIMIT 4""")
-    sample_n = rows(con, "SELECT count(DISTINCT cve_id) AS n FROM ans WHERE model = 'clef' AND pack = 'cvss31'")[0]["n"]
+        WHERE x.question_id = 'cwe_acceptable' AND x.model = 'clef' AND x.p_true < 0.5
+          AND x.cve_id IN ('CVE-2026-69421', 'CVE-2026-49314')""")
+    corpus_total = corpus["cves"]
 
     return {
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "repo_sha": run["repo_sha"][:12], "repo_head": run["repo_head_time"].strftime("%Y-%m-%d"),
-        "window_days": run["window_days"], "dev_days": run["dev_slice_days"],
-        "corpus": corpus, "min_cves": min_cves, "graded_checks": GRADED_CHECKS,
-        "grades": [{"min": t, "grade": g} for t, g in GRADES],
-        "cnas": cnas, "lint": lint_summary, "quality": quality, "bands": bands, "sample_n": sample_n,
-        "jury": {"n": jury_n, "jurors": jurors, "metrics": jury_metrics, "likely_errors": likely_errors},
-        "cwe_fit": cwe_fit, "cwe_rejections": cwe_rejections, "no_impact_examples": no_impact_examples,
+        "window_days": run["window_days"], "corpus": corpus, "min_cves": min_cves, "min_answered": MIN_ANSWERED,
+        "graded_checks": GRADED_CHECKS, "cnas": cnas, "lint": lint_summary,
+        "coverage": coverage | {"total": corpus_total}, "no_impact_share": no_impact_share, "basis": basis,
+        "spot": spot, "lowest": lowest, "examples": examples,
+        "shelved": {"bands": bands, "jury": jury, "cwe_not_exact": cwe["not_exact"], "cwe_examples": cwe_examples,
+                    "is_vuln": rejected},
     }
 
 

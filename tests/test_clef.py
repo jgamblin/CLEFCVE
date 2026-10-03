@@ -2,7 +2,7 @@ from clefcve.clef import QUESTIONS_DIR, load_pack, question_hash
 
 
 def test_all_packs_load_and_fit_api_limits():
-    for path in QUESTIONS_DIR.glob("*.yaml"):
+    for path in QUESTIONS_DIR.rglob("*.yaml"):
         pack = load_pack(str(path))
         assert pack["pack"] == path.stem
         assert 1 <= len(pack["questions"]) <= 64

@@ -102,7 +102,7 @@
   svg .lbl { fill: var(--ink); font-weight: 600; }
   .verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; }
   .verdict { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  .verdict .tag { font: 700 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+  .tag { font: 700 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
   .tag.good { color: var(--g-a); background: var(--g-a-soft); } .tag.mid { color: var(--g-c); background: var(--g-c-soft); }
   .tag.weak { color: var(--g-f); background: var(--g-f-soft); }
   .verdict h3 { margin: 8px 0 4px; } .verdict p { margin: 0; color: var(--muted); font-size: 14px; }
@@ -121,6 +121,19 @@
   footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; }
   @media (max-width: 560px) { .stat .v { font-size: 26px; } th, td { padding: 7px 8px; } }
   @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
+
+  /* Example pair + stacked basis bar */
+  .examples { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; margin-top: 14px; }
+  .example { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+  .example .verdictline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .example blockquote { margin: 0; color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+  .stack { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin: 10px 0 6px; }
+  .stack span { display: grid; place-items: center; font: 600 11.5px var(--body); color: #fff; min-width: 0; overflow: hidden; white-space: nowrap; }
+  .stacklegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+  .stacklegend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .coverage { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .meter { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; margin-top: 6px; max-width: 360px; }
+  .meter i { display: block; height: 100%; background: var(--accent); }
 </style>
 
 <div class="wrap">
@@ -129,12 +142,15 @@
     <h1>CVE CNA Report Card</h1>
     <p class="lede" id="lede"></p>
     <div class="stats" id="stats"></div>
+    <div class="coverage" id="coverage"></div>
   </header>
 
-  <section id="verdicts-section">
-    <h2>What Clef can and can't judge</h2>
-    <p class="sub">Cloudflare's Clef decision models, run locally, answered typed questions about each record from its title and description alone. Results are agreement with other sources unless marked otherwise.</p>
-    <div class="verdicts" id="verdicts"></div>
+  <section>
+    <h2>Two questions a small model answers well</h2>
+    <p class="sub">We asked Cloudflare's Clef decision models, running locally, many questions about each CVE record. Two held up: whether the description says why the bug matters to security, and how clear the description is for a defender. Everything else on this page that grades a CNA comes from rule checks that need no model.</p>
+    <div class="examples" id="examples"></div>
+    <div class="panel" style="margin-top:12px"><h3>How descriptions support a security impact</h3>
+      <p id="basisNote"></p><div class="stack" id="basisBar"></div><div class="stacklegend" id="basisLegend"></div></div>
   </section>
 
   <section id="grades">
@@ -148,41 +164,31 @@
   </section>
 
   <section>
-    <h2>Does the description say why it matters?</h2>
-    <p class="sub">Share of each CNA's sampled descriptions where Clef 27B finds no security impact established, and the average clarity it assigns (0 Unusable to 4 Excellent). CNAs with at least 5 sampled CVEs.</p>
+    <h2>Which CNAs say why it matters</h2>
+    <p class="sub" id="chartsSub"></p>
     <div class="pair">
-      <div class="panel"><h3>No security impact stated</h3><p>One CNA accounts for nearly all of it.</p><div id="impactChart"></div></div>
-      <div class="panel"><h3>Description clarity</h3><p>Expected clarity level, Clef 27B.</p><div id="clarityChart"></div></div>
+      <div class="panel"><h3>No security impact stated</h3><p>Share of each CNA's descriptions.</p><div id="impactChart"></div></div>
+      <div class="panel"><h3>Description clarity</h3><p>Average level, 0 Unusable to 4 Excellent.</p><div id="clarityChart"></div></div>
     </div>
-    <div class="cases" id="impactExamples" style="margin-top:12px"></div>
+    <h3 style="margin:22px 0 8px">Least clear descriptions outside the Linux kernel</h3>
+    <div class="cases" id="lowest"></div>
   </section>
 
   <section>
-    <h2>Is the CVSS right?</h2>
-    <p class="sub" id="cvssSub"></p>
-    <div class="pair">
-      <div class="panel"><h3>Who agrees with the LLM jury, per metric</h3>
-        <div class="legend"><span><i style="background:var(--clef)"></i>Clef 27B</span><span><i style="background:var(--cna)"></i>CNA</span><span><i style="background:var(--sunk);border:1px solid var(--line)"></i>Jury unanimous</span></div>
-        <div id="juryChart"></div></div>
-      <div class="panel"><h3>Severity band matches the CNA</h3>
-        <p>Clef's metric answers assembled into a full vector and scored, then compared with the CNA's severity band.</p>
-        <div class="legend"><span><i style="background:var(--clef)"></i>Clef 27B</span><span><i style="background:var(--flash)"></i>Clef Flash</span></div>
-        <div id="bandChart"></div></div>
-    </div>
-    <h3 style="margin:22px 0 8px">Likely CNA scoring errors</h3>
-    <p class="sub">Metrics where Clef 27B and the jury majority agree with each other and not with the CNA.</p>
-    <div class="cases" id="errors"></div>
+    <h2>Can the small model be trusted?</h2>
+    <p class="sub" id="spotSub"></p>
+    <div class="verdicts" id="spot"></div>
   </section>
 
   <section>
-    <h2>Is the CWE right?</h2>
-    <p class="sub">Clef compared each CNA-assigned CWE with its MITRE definition. These are the assignments it was least willing to accept.</p>
-    <div class="cases" id="cwe"></div>
+    <h2>Tried and shelved</h2>
+    <p class="sub">Questions we asked on a random sample that did not make the cut. The numbers are agreement with other sources, not accuracy.</p>
+    <div class="verdicts" id="shelved"></div>
   </section>
 
   <section>
     <h2>How this was made</h2>
-    <details class="method" id="method"><summary>Data, grading, models, and caveats</summary><div id="methodBody"></div></details>
+    <details class="method"><summary>Data, grading, models, and caveats</summary><div id="methodBody"></div></details>
   </section>
   <footer id="footer"></footer>
 </div>
@@ -196,38 +202,46 @@ const fmt = (n) => Number(n).toLocaleString("en-US");
 const cveLink = (id) => `<a class="mono" href="https://www.cve.org/CVERecord?id=${esc(id)}" target="_blank" rel="noopener noreferrer">${esc(id)}</a>`;
 const GRADE_VAR = { A: "--g-a", B: "--g-b", C: "--g-c", D: "--g-d", F: "--g-f" };
 const short = (s, n = 190) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+const COV = D.coverage, partial = COV.answered < COV.total * 0.98;
 
 // ---- Header ----
-const clefQ = D.quality.find((q) => q.model === "clef") || {};
-const flashQ = D.quality.find((q) => q.model === "clef-flash") || {};
-const band31 = (m) => D.bands.find((b) => b.version === "3.1" && b.model === m) || {};
 const counts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
 D.cnas.forEach((c) => counts[c.grade]++);
-const linuxNoImpact = D.cnas.find((c) => c.cna === "Linux")?.sample?.no_impact;
-const otherNoImpact = D.cnas.filter((c) => c.cna !== "Linux" && c.sample && c.sample.sample_n >= 5).map((c) => c.sample.no_impact);
-const otherRange = otherNoImpact.length ? `${pct(Math.min(...otherNoImpact))} to ${pct(Math.max(...otherNoImpact))}` : "–";
+const linuxShare = (() => { const l = D.no_impact_share.find((r) => r.cna === "Linux"); const all = COV.no_impact * COV.answered; return l && all ? l.n / all : null; })();
 $("eyebrow").textContent = `CVE List V5 · ${D.window_days}-day window to ${D.repo_head}`;
-$("lede").innerHTML = `How well CVE Numbering Authorities write their records, graded on <b>${fmt(D.corpus.cves)}</b> CVEs published in the last ${D.window_days} days, with a second opinion from <b>Clef</b>, Cloudflare's local decision models, on a random sample.`;
+$("lede").innerHTML = `How well CVE Numbering Authorities write their records: <b>${fmt(D.corpus.cves)}</b> CVEs published in the last ${D.window_days} days, checked against the CVE Program's rules and read by <b>Clef</b>, a small decision model running on a laptop.`;
 $("stats").innerHTML = [
   [fmt(D.corpus.cves), `CVEs published by ${D.corpus.cnas} CNAs`],
   [D.cnas.length, `CNAs graded (≥ ${D.min_cves} CVEs)<div class="gradebar">${Object.entries(counts).map(([g, n]) =>
     `<span title="${g}: ${n}" style="flex:${n};background:var(${GRADE_VAR[g]})"></span>`).join("")}</div>`],
-  [pct(band31("clef").same_band), `of Clef 27B CVSS scores land in the CNA's severity band (Flash ${pct(band31("clef-flash").same_band)})`],
-  [linuxNoImpact != null ? pct(linuxNoImpact) : "–", `of Linux kernel descriptions state no security impact, per Clef`],
+  [pct(COV.no_impact), `of descriptions never say what an attacker could do`],
+  [pct(linuxShare), `of those come from the Linux kernel CNA`],
 ].map(([v, k]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+$("coverage").innerHTML = partial
+  ? `Clef has read ${fmt(COV.answered)} of ${fmt(COV.total)} descriptions so far, in random order, so the Clef figures are a random sample. The run is still going.<div class="meter"><i style="width:${(100 * COV.answered / COV.total).toFixed(1)}%"></i></div>`
+  : `Clef read all ${fmt(COV.answered)} descriptions.`;
 
-// ---- Verdicts ----
-const jm = D.jury.metrics;
-const clefAhead = jm.filter((m) => m.clef > m.cna + 1e-9).length, tied = jm.filter((m) => Math.abs(m.clef - m.cna) < 1e-9).length;
-$("verdicts").innerHTML = [
-  ["good", "Useful", "Is a security impact stated?", `Separates fix logs from vulnerability descriptions cleanly: Linux at ${pct(linuxNoImpact)}, every other sampled CNA at ${otherRange}.`],
-  ["good", "Useful", "Is the description clear?", `Ranks CNAs plausibly and flags commit messages and marketing boilerplate. Flash is good enough here at a quarter of the cost.`],
-  ["mid", "Second reviewer", "Is the CVSS right?", `Clef 27B is as close to or closer to a ${D.jury.jurors.length}-model jury than the CNA on ${clefAhead + tied} of ${jm.length} metrics, about as good as one strong general model.`],
-  ["mid", "Promising", "Is the CWE right?", `Its rejections are real mistakes, such as an out-of-bounds write filed as a read. The jury couldn't confirm its stricter calls.`],
-  ["weak", "Can't tell", "Is it a vulnerability at all?", `Records later rejected as invalid read just as convincingly as valid ones. The reasons for rejection aren't in the text.`],
-].map(([cls, tag, h, p]) => `<div class="verdict"><span class="tag ${cls}">${tag}</span><h3>${h}</h3><p>${p}</p></div>`).join("");
+// ---- Examples + basis ----
+$("examples").innerHTML = D.examples.map((e) => `<div class="example"><div class="verdictline">
+  <span class="tag ${e.kind}">${e.kind === "good" ? "Impact stated" : "No impact stated"}</span>${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
+  <span class="delta">clarity ${e.clarity.toFixed(1)}</span></div><blockquote>${esc(short(e.description, 330))}</blockquote></div>`).join("");
+const BASIS = {
+  stated_explicitly: ["Says what an attacker can do", "--g-a"], implied_by_weakness: ["Names a vuln class (e.g. SQLi)", "--g-b"],
+  bug_fix_only: ["Describes only the bug or fix", "--g-f"], not_security_relevant: ["No security angle", "--g-d"],
+  insufficient_information: ["Too little information", "--muted"] };
+const basisTotal = D.basis.reduce((a, r) => a + r.n, 0);
+$("basisNote").textContent = `Clef's reading of ${fmt(basisTotal)} descriptions. A description that only names a well-known class such as SQL injection still counts as stating an impact.`;
+$("basisBar").innerHTML = D.basis.map((r) => `<span title="${esc(BASIS[r.basis]?.[0])}: ${pct(r.n / basisTotal, 1)}" style="flex:${r.n};background:var(${BASIS[r.basis]?.[1] || "--muted"})">${r.n / basisTotal > .08 ? pct(r.n / basisTotal) : ""}</span>`).join("");
+$("basisLegend").innerHTML = D.basis.map((r) => `<span><i style="background:var(${BASIS[r.basis]?.[1] || "--muted"})"></i>${esc(BASIS[r.basis]?.[0] || r.basis)} · ${pct(r.n / basisTotal, 1)}</span>`).join("");
 
 // ---- Table ----
+function barPct(v, invert = false) {
+  if (v == null) return `<span class="dim">–</span>`;
+  const g = invert ? 1 - v : v;
+  const color = g >= .95 ? "--g-a" : g >= .8 ? "--g-b" : g >= .6 ? "--g-c" : "--g-f";
+  return `${pct(v)}<span class="bar"><i style="width:${(100 * v).toFixed(0)}%;background:var(${color})"></i></span>`;
+}
+const dash = `<span class="dim">–</span>`;
 const COLS = [
   { key: "cna", label: "CNA", get: (c) => c.cna, fmt: (c) => esc(c.cna), cls: "cna" },
   { key: "grade", label: "Grade", get: (c) => c.score, fmt: (c) => `<span class="grade ${c.grade}" title="Score ${c.score}">${c.grade}</span>` },
@@ -237,18 +251,12 @@ const COLS = [
   { key: "cwe", label: "CWE ID", get: (c) => c.checks.cwe_structured, fmt: (c) => barPct(c.checks.cwe_structured) },
   { key: "fix", label: "Fixed ver.", get: (c) => c.checks.fixed_version, fmt: (c) => barPct(c.checks.fixed_version) },
   { key: "uniq", label: "Unique desc.", get: (c) => c.checks.desc_unique, fmt: (c) => barPct(c.checks.desc_unique) },
-  { key: "cvss", label: "Has CVSS", get: (c) => c.has_cvss, fmt: (c) => barPct(c.has_cvss) },
-  { key: "clarity", label: "Clarity", group: true, get: (c) => c.sample?.clarity, fmt: (c) => c.sample ? c.sample.clarity.toFixed(1) : `<span class="dim">–</span>` },
-  { key: "noimpact", label: "No impact", group: true, get: (c) => c.sample?.no_impact, fmt: (c) => c.sample ? `<span class="${c.sample.no_impact > .5 ? "bad" : ""}">${pct(c.sample.no_impact)}</span>` : `<span class="dim">–</span>` },
-  { key: "band", label: "CVSS band", group: true, get: (c) => c.sample?.same_band, fmt: (c) => c.sample?.same_band != null ? pct(c.sample.same_band) : `<span class="dim">–</span>` },
+  { key: "noimpact", label: "No impact", group: true, get: (c) => c.clef?.no_impact, fmt: (c) => c.clef ? barPct(c.clef.no_impact, true) : dash },
+  { key: "clarity", label: "Clarity", group: true, get: (c) => c.clef?.clarity, fmt: (c) => c.clef ? c.clef.clarity.toFixed(1) : dash },
+  { key: "answered", label: "Read", group: true, get: (c) => c.clef?.answered, fmt: (c) => c.clef ? `<span class="dim">${fmt(c.clef.answered)}</span>` : dash },
 ];
-function barPct(v) {
-  if (v == null) return `<span class="dim">–</span>`;
-  const color = v >= .95 ? "--g-a" : v >= .8 ? "--g-b" : v >= .6 ? "--g-c" : "--g-f";
-  return `${pct(v)}<span class="bar"><i style="width:${(100 * v).toFixed(0)}%;background:var(${color})"></i></span>`;
-}
 let sortKey = "cves", sortDir = -1, filterGrade = null, query = "", open = new Set();
-$("gradesSub").innerHTML = `Grades use only deterministic checks against CNA Operational Rules 4.1.0 over every record each CNA published. The score is the average pass rate of ${Object.keys(D.graded_checks).length} checks; A ≥ 95, B ≥ 88, C ≥ 80, D ≥ 70. The last three columns come from Clef 27B on a random sample and appear for CNAs with at least 5 sampled CVEs. Click a row for the check breakdown.`;
+$("gradesSub").innerHTML = `Grades use only rule checks against CNA Operational Rules 4.1.0, run on every record a CNA published. The score is the average pass rate of ${Object.keys(D.graded_checks).length} checks; A ≥ 95, B ≥ 88, C ≥ 80, D ≥ 70. The Clef columns appear once Clef has read at least ${D.min_answered} of a CNA's descriptions. Click a row for the check breakdown.`;
 $("gradeFilter").innerHTML = ["All", "A", "B", "C", "D", "F"].map((g) =>
   `<button class="chip" data-g="${g}" aria-pressed="${g === "All"}">${g === "All" ? "All grades" : `${g} · ${counts[g]}`}</button>`).join("");
 $("gradeFilter").addEventListener("click", (e) => {
@@ -258,7 +266,6 @@ $("gradeFilter").addEventListener("click", (e) => {
   renderTable();
 });
 $("search").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); renderTable(); });
-
 function detailRow(c) {
   const checks = Object.entries(D.graded_checks).map(([k, label]) => {
     const v = c.checks[k];
@@ -266,15 +273,17 @@ function detailRow(c) {
     return `<div class="crow"><span>${esc(label)}</span><span class="num" style="text-align:right">${pct(v)}</span>
       <span class="track"><i style="width:${v == null ? 0 : (100 * v).toFixed(0)}%;background:var(${color})"></i></span></div>`;
   }).join("");
-  const s = c.sample;
-  const sample = s ? `<div class="crow"><span>Sampled CVEs (Clef 27B)</span><span class="num" style="text-align:right">${s.sample_n}</span><span></span></div>
-      <div class="crow"><span>Descriptions that read as commit messages</span><span class="num" style="text-align:right">${pct(s.commit_msg)}</span><span></span></div>
-      ${s.cna_minus_clef != null ? `<div class="crow"><span>CNA score minus Clef score (v3.1, ${s.sev_n} CVEs)</span><span class="num" style="text-align:right">${s.cna_minus_clef > 0 ? "+" : ""}${s.cna_minus_clef.toFixed(1)}</span><span></span></div>` : ""}`
-    : `<div class="dim">Too few sampled CVEs for Clef columns.</div>`;
+  const k = c.clef;
+  const clef = k ? `<div class="crow"><span>Descriptions read by Clef</span><span class="num" style="text-align:right">${fmt(k.answered)}</span><span></span></div>
+      <div class="crow"><span>No security impact stated</span><span class="num" style="text-align:right">${pct(k.no_impact)}</span><span></span></div>
+      <div class="crow"><span>Describes only the bug or fix</span><span class="num" style="text-align:right">${pct(k.bug_fix_only)}</span><span></span></div>
+      <div class="crow"><span>Average clarity (0-4)</span><span class="num" style="text-align:right">${k.clarity.toFixed(2)}</span><span></span></div>`
+    : `<div class="dim">Clef hasn't read enough of this CNA's descriptions yet.</div>`;
   return `<tr class="detail"><td colspan="${COLS.length}"><div class="detailgrid"><div>${checks}</div><div>
-    <div class="crow"><span>CVSS score doesn't match its vector</span><span class="num" style="text-align:right">${c.cvss_mismatches}</span><span></span></div>${sample}</div></div></td></tr>`;
+    <div class="crow"><span>Records with a MUST-level failure</span><span class="num" style="text-align:right">${pct(c.must_fail)}</span><span></span></div>
+    <div class="crow"><span>Records with a CVSS score</span><span class="num" style="text-align:right">${pct(c.has_cvss)}</span><span></span></div>
+    <div class="crow"><span>CVSS scores that don't match their vector</span><span class="num" style="text-align:right">${c.cvss_mismatches}</span><span></span></div>${clef}</div></div></td></tr>`;
 }
-
 function renderTable() {
   const col = COLS.find((c) => c.key === sortKey);
   const list = D.cnas.filter((c) => (!filterGrade || c.grade === filterGrade) && (!query || c.cna.toLowerCase().includes(query)))
@@ -284,7 +293,7 @@ function renderTable() {
       return (typeof x === "string" ? x.localeCompare(y) : x - y) * sortDir;
     });
   const nGroup = COLS.filter((c) => c.group).length;
-  $("table").innerHTML = `<thead><tr><th class="group" colspan="${COLS.length - nGroup}"></th><th class="group" colspan="${nGroup}">Clef 27B · sample</th></tr>
+  $("table").innerHTML = `<thead><tr><th class="group" colspan="${COLS.length - nGroup}"></th><th class="group" colspan="${nGroup}">Clef</th></tr>
     <tr>${COLS.map((c) => `<th tabindex="0" data-k="${c.key}" aria-sort="${c.key === sortKey ? (sortDir > 0 ? "ascending" : "descending") : "none"}">${c.label}</th>`).join("")}</tr></thead>
     <tbody>${list.map((c) => `<tr class="row" data-cna="${esc(c.cna)}" tabindex="0" aria-expanded="${open.has(c.cna)}">${COLS.map((k) =>
       `<td class="num ${k.cls || ""}">${k.fmt(c)}</td>`).join("")}</tr>${open.has(c.cna) ? detailRow(c) : ""}`).join("")
@@ -299,80 +308,52 @@ $("table").addEventListener("click", (e) => {
 $("table").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.target.click(); } });
 renderTable();
 
-// ---- Charts (inline SVG, one scale per chart) ----
+// ---- Charts: the 20 largest CNAs that Clef has read enough of ----
 function hbars(el, rows, { max, fmtV, colorOf }) {
-  const W = 520, rowH = 24, left = 110, right = 56, H = rows.length * rowH + 22;
+  const W = 520, rowH = 22, left = 110, right = 52, H = rows.length * rowH + 22;
   const x = (v) => left + (W - left - right) * v / max;
-  const ticks = [0, .25, .5, .75, 1].map((t) => t * max);
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="bar chart">
-    ${ticks.map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 18}" stroke="var(--line)"/>
+    ${[0, .25, .5, .75, 1].map((t) => t * max).map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 18}" stroke="var(--line)"/>
       <text x="${x(t)}" y="${H - 4}" text-anchor="middle">${fmtV(t, true)}</text>`).join("")}
-    ${rows.map((r, i) => `<text class="lbl" x="${left - 8}" y="${i * rowH + 16}" text-anchor="end">${esc(r.label)}</text>
-      <rect x="${left}" y="${i * rowH + 5}" width="${Math.max(1.5, x(r.value) - left)}" height="${rowH - 10}" rx="3" fill="var(${colorOf(r)})"/>
-      <text x="${x(r.value) + 6}" y="${i * rowH + 16}">${fmtV(r.value)}</text>`).join("")}
+    ${rows.map((r, i) => `<text class="lbl" x="${left - 8}" y="${i * rowH + 15}" text-anchor="end">${esc(r.label)}</text>
+      <rect x="${left}" y="${i * rowH + 4}" width="${Math.max(1.5, x(r.value) - left)}" height="${rowH - 8}" rx="3" fill="var(${colorOf(r)})"/>
+      <text x="${x(r.value) + 6}" y="${i * rowH + 15}">${fmtV(r.value)}</text>`).join("")}
   </svg>`;
 }
-const sampled = D.cnas.filter((c) => c.sample && c.sample.sample_n >= 5);
-hbars($("impactChart"), sampled.map((c) => ({ label: c.cna, value: c.sample.no_impact })).sort((a, b) => b.value - a.value),
-  { max: 1, fmtV: (v) => pct(v), colorOf: (r) => r.value > .5 ? "--g-f" : r.value > .05 ? "--g-c" : "--g-a" });
-hbars($("clarityChart"), sampled.map((c) => ({ label: c.cna, value: c.sample.clarity })).sort((a, b) => b.value - a.value),
+const big = D.cnas.filter((c) => c.clef).sort((a, b) => b.cves - a.cves).slice(0, 20);
+$("chartsSub").textContent = `The ${big.length} largest CNAs that Clef has read at least ${D.min_answered} descriptions from.`;
+hbars($("impactChart"), big.map((c) => ({ label: c.cna, value: c.clef.no_impact })).sort((a, b) => b.value - a.value),
+  { max: 1, fmtV: (v) => pct(v), colorOf: (r) => r.value > .5 ? "--g-f" : r.value > .1 ? "--g-c" : "--g-a" });
+hbars($("clarityChart"), big.map((c) => ({ label: c.cna, value: c.clef.clarity })).sort((a, b) => b.value - a.value),
   { max: 4, fmtV: (v, tick) => tick ? String(v) : v.toFixed(1), colorOf: (r) => r.value >= 3 ? "--g-a" : r.value >= 2.5 ? "--g-b" : r.value >= 2 ? "--g-c" : "--g-f" });
-$("impactExamples").innerHTML = D.no_impact_examples.slice(0, 2).map((e) => `<div class="case"><div class="head">${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
-  <span class="delta">P(impact stated) ${e.p_impact.toFixed(2)}</span></div><div class="desc">${esc(short(e.description, 260))}</div></div>`).join("");
+$("lowest").innerHTML = D.lowest.map((e) => `<div class="case"><div class="head">${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
+  <span class="delta">clarity ${e.clarity.toFixed(1)}</span></div><div class="desc">${esc(short(e.description, 260))}</div></div>`).join("");
 
-// Jury dumbbell: per metric, Clef vs CNA agreement with the jury majority; faint bar = jury unanimity.
-(function juryChart() {
-  const el = $("juryChart");
-  if (!jm.length) { el.innerHTML = `<p>No jury results yet.</p>`; return; }
-  const W = 520, rowH = 30, left = 40, right = 20, H = jm.length * rowH + 24;
-  const x = (v) => left + (W - left - right) * v;
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Clef and CNA agreement with the jury by CVSS metric">
-    ${[0, .25, .5, .75, 1].map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 20}" stroke="var(--line)"/>
-      <text x="${x(t)}" y="${H - 5}" text-anchor="middle">${pct(t)}</text>`).join("")}
-    ${jm.map((m, i) => { const y = i * rowH + 15; return `
-      <rect x="${left}" y="${y - 9}" width="${x(m.unanimous) - left}" height="18" rx="3" fill="var(--sunk)"/>
-      <text class="lbl" x="${left - 8}" y="${y + 4}" text-anchor="end" style="font-family:var(--mono)">${m.metric}</text>
-      <line x1="${x(Math.min(m.clef, m.cna))}" x2="${x(Math.max(m.clef, m.cna))}" y1="${y}" y2="${y}" stroke="var(--muted)" stroke-width="1.5"/>
-      <circle cx="${x(m.cna)}" cy="${y}" r="6" fill="var(--cna)"><title>CNA ${pct(m.cna)} (n=${m.n})</title></circle>
-      <circle cx="${x(m.clef)}" cy="${y}" r="6" fill="var(--clef)"><title>Clef 27B ${pct(m.clef)} (n=${m.n})</title></circle>`; }).join("")}
-  </svg>`;
-})();
-$("cvssSub").textContent = D.jury.n
-  ? `A jury of ${D.jury.jurors.length} general-purpose local models (${D.jury.jurors.map((j) => j.split(":")[0]).join(", ")}) scored CVSS v3.1 for ${D.jury.n} sampled CVEs from the same text Clef saw. Its majority vote is the reference. Clef is as close or closer than the CNA on ${clefAhead + tied} of ${jm.length} metrics. The jury itself rarely agrees unanimously on impact (C, I, A) or Scope, so treat those rows with care.`
-  : "";
+// ---- Spot check ----
+const spot = Object.fromEntries(D.spot.map((s) => [s.question, s]));
+$("spotSub").textContent = `The full run uses Clef Flash (9B). On ${fmt(spot.security_impact_stated?.n ?? 0)} CVEs we also asked Clef 27B, about four times slower, to see how often the smaller model gives the same answer.`;
+$("spot").innerHTML = [
+  ["good", pct(spot.security_impact_stated?.agree), "Security impact stated", `Same yes/no answer as Clef 27B. When they differ, Flash is the stricter one ${pct(spot.security_impact_stated?.flash_stricter)} of the time, so its "no impact" rates run a little high.`],
+  ["good", pct(spot.desc_clarity?.agree), "Description clarity", `Within half a level of Clef 27B on the 0-4 scale.`],
+  ["mid", `${(COV.ms / 1000).toFixed(1)} s`, "Per description", `Median time on a laptop for these questions, so the whole ${D.window_days}-day corpus takes a few hours.`],
+].map(([cls, big, h, p]) => `<div class="verdict"><span class="tag ${cls}">${big}</span><h3>${h}</h3><p>${p}</p></div>`).join("");
 
-// Severity band bars
-(function bandChart() {
-  const rows = ["3.1", "4.0"].flatMap((v) => ["clef", "clef-flash"].map((m) => ({ v, m, b: D.bands.find((x) => x.version === v && x.model === m) })))
-    .filter((r) => r.b);
-  const W = 520, rowH = 34, left = 120, right = 60, H = rows.length * rowH + 24;
-  const x = (v) => left + (W - left - right) * v;
-  $("bandChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Severity band agreement">
-    ${[0, .25, .5, .75, 1].map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 20}" stroke="var(--line)"/>
-      <text x="${x(t)}" y="${H - 5}" text-anchor="middle">${pct(t)}</text>`).join("")}
-    ${rows.map((r, i) => `<text class="lbl" x="${left - 8}" y="${i * rowH + 21}" text-anchor="end">CVSS v${r.v} · ${r.m === "clef" ? "27B" : "Flash"}</text>
-      <rect x="${left}" y="${i * rowH + 8}" width="${x(r.b.same_band) - left}" height="18" rx="3" fill="var(${r.m === "clef" ? "--clef" : "--flash"})"/>
-      <text x="${x(r.b.same_band) + 6}" y="${i * rowH + 21}">${pct(r.b.same_band)} · n=${r.b.n}</text>`).join("")}
-  </svg><p style="margin:8px 0 0">Mean score difference: 27B ${band31("clef").mean_abs_diff?.toFixed(1)} points, Flash ${band31("clef-flash").mean_abs_diff?.toFixed(1)} (v3.1). Misses fall about evenly above and below the CNA.</p>`;
-})();
-
-$("errors").innerHTML = D.jury.likely_errors.map((e) => `<div class="case"><div class="head">${cveLink(e.cve_id)}<span class="eyebrow">${esc(e.cna)}</span>
-  ${e.changes.map((c) => `<span class="delta">${esc(c.metric)} <s>${esc(c.cna)}</s> → <b>${esc(c.ref)}</b></span>`).join("")}</div>
-  <div class="desc">${esc(short(e.description))}</div></div>`).join("") || `<p class="sub">No jury results yet.</p>`;
-
-$("cwe").innerHTML = D.cwe_rejections.map((r) => `<div class="case"><div class="head">${cveLink(r.cve_id)}<span class="eyebrow">${esc(r.cna)}</span>
-  <span class="delta">${esc(r.cwe)} ${esc(r.name || "")}</span><span class="delta">fit: ${esc((r.fit || "").replace(/_/g, " "))}</span>
-  <span class="delta">P(accept) ${r.p_accept.toFixed(2)}</span></div><div class="desc">${esc(short(r.description))}</div></div>`).join("");
+// ---- Shelved ----
+const S = D.shelved, J = S.jury, band = (m) => S.bands.find((b) => b.model === m);
+$("shelved").innerHTML = [
+  ["weak", "Can't tell", "Is it a vulnerability at all?", `Records later rejected as invalid read as convincingly as valid ones (average ${S.is_vuln.rejected_invalid?.toFixed(2)} vs ${S.is_vuln.published?.toFixed(2)}). The reasons a CVE gets rejected are rarely in its text. Rephrasing the question to "does it state an impact" is what worked.`],
+  ["mid", "Second reviewer", "Is the CVSS score right?", `Clef 27B lands in the CNA's severity band ${pct(band("clef")?.same_band)} of the time (Flash ${pct(band("clef-flash")?.same_band)}). Against a ${J.jurors?.length || 5}-model jury it matches or beats the CNA on ${J.clef_tied_or_ahead} of ${J.metrics} metrics, but at ${pct(J.clef_avg)} average agreement it is no better than one general model (${pct(J.juror_lo)} to ${pct(J.juror_hi)}).`],
+  ["mid", "Promising", "Is the CWE right?", `Clef calls ${pct(S.cwe_not_exact)} of assigned CWEs less than an exact fit, and its sharpest rejections are real mistakes, such as ${S.cwe_examples.map((e) => `${esc(e.cwe)} (${esc(e.name)}) for “${esc(short(e.description, 48))}”`).join(" and ")}. The jury mostly accepted the CNA's CWE, so these calls couldn't be confirmed.`],
+].map(([cls, tag, h, p]) => `<div class="verdict"><span class="tag ${cls}">${tag}</span><h3>${h}</h3><p>${p}</p></div>`).join("");
 
 // ---- Method ----
 const lintTop = D.lint.slice(0, 8).map((l) => `<li><span class="mono">${esc(l.check_id)}</span> (${esc(l.rule)}, ${esc(l.level)}): ${fmt(l.flagged)} of ${fmt(l.evaluated)} records flagged</li>`).join("");
 $("methodBody").innerHTML = `
-  <p><b>Data.</b> Every CVE record published in the ${D.window_days} days to ${D.repo_head} from the CVE List V5 repository (commit <span class="mono">${esc(D.repo_sha)}</span>), plus ${fmt(D.corpus.rejected)} records rejected in that window whose original text was recovered from git history.</p>
-  <p><b>Grades.</b> Deterministic checks only, over every record a CNA published. Score = average pass rate of these checks:</p>
+  <p><b>Data.</b> Every CVE record published in the ${D.window_days} days to ${D.repo_head} in the CVE List V5 repository (commit <span class="mono">${esc(D.repo_sha)}</span>).</p>
+  <p><b>Grades.</b> Rule checks only, over every record a CNA published. Score = average pass rate of:</p>
   <ul>${Object.values(D.graded_checks).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>
   <p>Most-flagged checks across the corpus:</p><ul>${lintTop}</ul>
-  <p><b>Clef.</b> Clef 27B and Clef Flash (Cloudflare, via Ollama's decision endpoint) answered typed questions from each record's title and description, never seeing the assigned CVSS. Sample: ${D.sample_n} random CVEs from the last ${D.dev_days} days for CVSS and CWE; ${clefQ.n ?? "–"} CVEs for the description questions, including a CNA-stratified labeling set. Median time per CVE for the 19 description questions: 27B ${(clefQ.ms / 1000).toFixed(1)} s, Flash ${(flashQ.ms / 1000).toFixed(1)} s.</p>
-  <p><b>Jury.</b> ${esc(D.jury.jurors.join(", "))}. Qwen 3.8 was left out because Clef is fine-tuned from it. Each juror received the same impact guidance as Clef's CVSS questions, so the jury and Clef may share biases.</p>
-  <p><b>Caveats.</b> Apart from the hand-labeled set, every Clef number here is agreement with another source, not accuracy. Clef-based columns rest on small per-CNA samples. A low grade measures record completeness against the rules, not the quality of a CNA's security work.</p>`;
+  <p><b>Clef.</b> Cloudflare's Clef Flash (9B) answered three typed questions from each record's title and description through Ollama's decision endpoint: does the description establish a security impact (yes/no), how does it support one (five options), and how clear is it (0-4). It never sees the CVSS, CWE, or affected-product data. Clef 27B answered the same questions on a random sample as a check.</p>
+  <p><b>Caveats.</b> Clef's answers are judgments about the text, checked against a larger model and a small set of hand labels, not ground truth. A CNA's grade measures record completeness against the rules, not the quality of its security work.</p>`;
 $("footer").textContent = `Generated ${D.generated} by clefcve.report_card.`;
 </script>

@@ -1,39 +1,8 @@
-# Q1 (is a security impact stated), Q2 (description quality), judgment-based CNA rules, product context, and SSVC,
-# judged from the title + description only. Assigned CVSS/CWE are deliberately NOT in the state.
-pack: quality
+# Experimental: description sub-elements, judgment-based CNA rules, product category, and SSVC.
+# Shelved after the first results (see PLAN.md); kept runnable: --pack experimental/quality_extra
+pack: quality_extra
 state: description_only
 questions:
-
-  # ---- Q1: does the record state a security impact? (CNA Rules 4.1.2, 5.2.1) ----
-  # Rephrased from "is this a vulnerability?": the first-results run showed the model can't tell a rejected-as-invalid
-  # CVE from a valid one by its text (that judgment needs facts outside the record), but it can judge whether the
-  # text itself establishes a security impact.
-  security_impact_stated:
-    type: noul
-    instructions: >-
-      Does the description establish a security impact, that is, explain or clearly imply how an attacker could gain
-      access, capabilities, or information they are not authorized for, or deny service to others? Judge only what
-      the text says; do not assume an impact the text does not support.
-    criteria:
-      "false": >-
-        No security impact is established: it describes a bug, a code change, or a fix (for example a leak, a
-        race, a missing check, a NULL dereference) without saying what an attacker could achieve or who could
-        trigger it.
-      "true": >-
-        A security impact is stated or clearly implied, for example remote code execution, privilege escalation,
-        reading or modifying data, authentication bypass, cross-site scripting, or denial of service by an attacker.
-
-  impact_basis:
-    type: choice
-    instructions: How does the description support (or fail to support) a security impact?
-    criteria:
-      stated_explicitly: It explicitly states what an attacker can do, such as execute code, read files, or crash the service.
-      implied_by_weakness: It names a well-known vulnerability class whose impact is implied, such as SQL injection or XSS, without spelling out the impact.
-      bug_fix_only: It describes a code defect or its fix, such as a leak, race, or missing check, without saying what an attacker could achieve.
-      not_security_relevant: It describes a functional, performance, or reliability problem with no security angle.
-      insufficient_information: Too little information to tell what the issue is.
-
-  # ---- Q2: is the description well written? (CNA Rules 5.1.1-5.1.7, 5.2; Key Details Phrasing) ----
   desc_names_product:
     type: noul
     instructions: Judge only the description text. Does it name the specific affected product (and its vendor or project)?
@@ -78,25 +47,6 @@ questions:
     criteria:
       "false": No vector or component is identified.
       "true": A specific vector or component is identified.
-  desc_clarity:
-    type: score
-    instructions: >-
-      Rate how clear, specific, and useful the description is for a defender deciding whether they are affected
-      and how serious the issue is.
-    criteria:
-      - Unusable. Placeholder, nonsense, or no meaningful information about the vulnerability.
-      - Poor. Vague or confusing; a defender cannot tell what is affected or what the risk is.
-      - Adequate. Identifies the product and the problem but omits important details such as versions, attacker, or impact.
-      - Good. Clear product, versions, vulnerability type, attacker, and impact, with minor gaps.
-      - Excellent. Precise and complete; product, versions, component, vulnerability type, attacker, preconditions, and impact.
-  desc_is_commit_message:
-    type: noul
-    instructions: >-
-      Is the description primarily a source-code commit message or changelog entry describing a code change,
-      rather than an explanation of the security vulnerability and its impact?
-    criteria:
-      "false": It explains the vulnerability to users of the product.
-      "true": It is mainly a developer-oriented commit message or changelog of the fix.
   desc_is_boilerplate:
     type: noul
     instructions: >-
@@ -120,7 +70,6 @@ questions:
       "false": Everything in it is relevant to the vulnerability.
       "true": It contains irrelevant content such as advertising or marketing.
 
-  # ---- Rules compliance needing judgment (CNA Rules 4.1.12, 4.2.11, 5.1.11.1) ----
   multiple_vulns:
     type: noul
     instructions: >-
@@ -138,7 +87,6 @@ questions:
       "false": Installable, downloadable, on-premises, firmware, library, or otherwise customer-run product.
       "true": Exclusively a hosted service operated by the vendor.
 
-  # ---- Context ----
   product_category:
     type: choice
     instructions: What kind of product is affected?
@@ -161,7 +109,6 @@ questions:
       hardware: A CPU, chipset, or other hardware component.
       other: Something else.
 
-  # ---- SSVC decision points (CISA Vulnrichment publishes these) ----
   ssvc_exploitation:
     type: choice
     instructions: Based only on the record, what is the evidence of exploitation?
@@ -183,3 +130,12 @@ questions:
     criteria:
       partial: Limited control over, or limited information exposure from, the system.
       total: Total control of the system's behavior, or total disclosure of all its information.
+
+  desc_is_commit_message:
+    type: noul
+    instructions: >-
+      Is the description primarily a source-code commit message or changelog entry describing a code change,
+      rather than an explanation of the security vulnerability and its impact?
+    criteria:
+      "false": It explains the vulnerability to users of the product.
+      "true": It is mainly a developer-oriented commit message or changelog of the fix.

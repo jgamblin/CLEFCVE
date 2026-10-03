@@ -1,6 +1,6 @@
-"""Stages 4-6: score Clef's answers against CNA, CISA ADP, and rejection signals; write a Markdown report.
+"""Score Clef's answers and the rule checks; write a Markdown report.
 
-Usage: python -m clefcve.evaluate [--out data/reports/first_results.md]
+Usage: python -m clefcve.evaluate [--experimental] [--out data/reports/results.md]
 
 Every comparison here is *agreement* with another source, not accuracy: CNA and CISA values are themselves
 noisy, which is why CNA-vs-CISA agreement is reported alongside as a human-vs-human reference point.
@@ -16,6 +16,8 @@ import duckdb
 from . import config
 from .run import connect_retry
 
+# The model that answers the core questions over the whole corpus; Clef 27B is used on samples as a check.
+CORPUS_MODEL = "clef-flash"
 CVSS31 = ["AV", "AC", "PR", "UI", "S", "C", "I", "A"]
 CVSS40 = ["AV", "AC", "AT", "PR", "UI", "VC", "VI", "VA", "SC", "SI", "SA"]
 # Rejection reasons that say the issue isn't a valid vulnerability (vs. duplicates or withdrawn-for-other-reasons).
@@ -337,12 +339,12 @@ def vuln_section(con) -> str:
         FROM ans JOIN cves USING (cve_id) WHERE question_id = 'impact_basis' AND state = 'PUBLISHED'
         GROUP BY model, choice ORDER BY model DESC, n DESC
     """))
-    out.append("\nBy CNA: share of descriptions with no security impact established (Clef 27B, ≥ 5 sampled CVEs):\n")
-    out.append(md_table(con, """
+    out.append(f"\nBy CNA: share of descriptions with no security impact established ({CORPUS_MODEL}, ≥ 25 answered CVEs):\n")
+    out.append(md_table(con, f"""
         SELECT assigner, count(*) AS n, round(100.0 * avg((p_true < 0.5)::INT), 1) AS pct_no_impact_stated
         FROM ans JOIN cves USING (cve_id)
-        WHERE question_id = 'security_impact_stated' AND model = 'clef' AND state = 'PUBLISHED'
-        GROUP BY 1 HAVING count(*) >= 5 ORDER BY pct_no_impact_stated DESC, n DESC
+        WHERE question_id = 'security_impact_stated' AND model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
+        GROUP BY 1 HAVING count(*) >= 25 ORDER BY pct_no_impact_stated DESC, n DESC LIMIT 25
     """))
     out.append("\nPublished CVEs where Clef 27B finds the least stated impact:\n")
     out.append(md_table(con, """
@@ -396,42 +398,51 @@ def gold_section(con) -> str:
 
 
 def description_section(con) -> str:
-    out = ["## Q2: Description quality\n",
-           "Element presence = share of descriptions where Clef says p ≥ 0.5. `clarity` is the expected level "
-           "on a 0-4 scale (Unusable, Poor, Adequate, Good, Excellent).\n"]
+    out = ["## Q2: How clear is the description?\n",
+           "`clarity` is the expected level on Clef's 0-4 scale (Unusable, Poor, Adequate, Good, Excellent). "
+           "`commit_msg` = reads as a developer commit message rather than a vulnerability description.\n"]
     out.append(md_table(con, """
-        SELECT model,
-               count(DISTINCT cve_id) AS n,
+        SELECT model, count(DISTINCT cve_id) AS n,
                round(avg(score) FILTER (question_id = 'desc_clarity'), 2) AS clarity,
+               round(100.0 * avg((score < 1.5)::INT) FILTER (question_id = 'desc_clarity'), 1) AS poor_or_worse_pct,
+               round(100.0 * avg((score >= 2.5)::INT) FILTER (question_id = 'desc_clarity'), 1) AS good_or_better_pct,
+               round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_commit_message'), 1) AS commit_msg_pct
+        FROM ans JOIN cves USING (cve_id) WHERE state = 'PUBLISHED'
+        GROUP BY model ORDER BY model DESC
+    """))
+    out.append(f"\nBy CNA ({CORPUS_MODEL}, CNAs with ≥ 25 answered CVEs):\n")
+    out.append(md_table(con, f"""
+        SELECT assigner, count(DISTINCT cve_id) AS n,
+               round(avg(score) FILTER (question_id = 'desc_clarity'), 2) AS clarity,
+               round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_commit_message'), 0) AS commit_msg_pct
+        FROM ans JOIN cves USING (cve_id)
+        WHERE state = 'PUBLISHED' AND model = '{CORPUS_MODEL}'
+        GROUP BY 1 HAVING count(DISTINCT cve_id) >= 25 ORDER BY clarity
+    """))
+    out.append(f"\nLowest-clarity descriptions ({CORPUS_MODEL}):\n")
+    out.append(md_table(con, f"""
+        SELECT cve_id, assigner, round(score, 2) AS clarity, left(description, 140) AS description
+        FROM ans JOIN cves USING (cve_id)
+        WHERE question_id = 'desc_clarity' AND model = '{CORPUS_MODEL}' AND state = 'PUBLISHED'
+        ORDER BY score LIMIT 8
+    """))
+    return "\n".join(out)
+
+
+def description_elements_section(con) -> str:
+    out = ["## Experimental: description elements\n",
+           "Share of descriptions where Clef says each element is present (p ≥ 0.5). Sampled CVEs only.\n"]
+    out.append(md_table(con, """
+        SELECT model, count(DISTINCT cve_id) AS n,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_product'), 0) AS product,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_versions'), 0) AS versions,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_vuln_type'), 0) AS vuln_type,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_attacker'), 0) AS attacker,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_impact'), 0) AS impact,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_vector'), 0) AS vector,
-               round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_commit_message'), 0) AS commit_msg,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_boilerplate'), 0) AS boilerplate
         FROM ans JOIN cves USING (cve_id) WHERE state = 'PUBLISHED' AND pack = 'quality'
         GROUP BY model ORDER BY model DESC
-    """))
-    out.append("\nBy CNA (Clef 27B if available, CNAs with ≥ 5 sampled CVEs):\n")
-    out.append(md_table(con, """
-        WITH m AS (SELECT coalesce(max(model) FILTER (model = 'clef'), max(model)) AS m FROM ans)
-        SELECT assigner, count(DISTINCT cve_id) AS n,
-               round(avg(score) FILTER (question_id = 'desc_clarity'), 2) AS clarity,
-               round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_impact'), 0) AS impact_pct,
-               round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_names_attacker'), 0) AS attacker_pct,
-               round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'desc_is_commit_message'), 0) AS commit_msg_pct
-        FROM ans JOIN cves USING (cve_id)
-        WHERE state = 'PUBLISHED' AND pack = 'quality' AND model = (SELECT m FROM m)
-        GROUP BY 1 HAVING count(DISTINCT cve_id) >= 5 ORDER BY clarity
-    """))
-    out.append("\nLowest-clarity descriptions (Clef 27B):\n")
-    out.append(md_table(con, """
-        SELECT cve_id, assigner, round(score, 2) AS clarity, left(description, 140) AS description
-        FROM ans JOIN cves USING (cve_id)
-        WHERE question_id = 'desc_clarity' AND model = 'clef' AND state = 'PUBLISHED'
-        ORDER BY score LIMIT 8
     """))
     return "\n".join(out)
 
@@ -465,7 +476,7 @@ def cwe_section(con) -> str:
 
 
 def rules_section(con) -> str:
-    out = ["## Q5: CNA Operational Rules 4.1.0 (full corpus, deterministic)\n"]
+    out = ["## Rule checks: CNA Operational Rules 4.1.0 (full corpus, no model)\n"]
     out.append(md_table(con, """
         SELECT check_id, rule, level, count(*) FILTER (status IN ('fail', 'warn')) AS flagged,
                count(*) FILTER (status IN ('pass', 'fail', 'warn')) AS evaluated,
@@ -483,7 +494,11 @@ def rules_section(con) -> str:
                mode(checks) AS most_common_failure
         FROM per GROUP BY 1 HAVING count(*) >= 100 ORDER BY pct_must_fail DESC LIMIT 15
     """))
-    out.append("\nJudgment-based rules (Clef, sampled CVEs; % with p ≥ 0.5):\n")
+    return "\n".join(out)
+
+
+def judgment_rules_section(con) -> str:
+    out = ["## Experimental: judgment-based rules\n", "Clef, sampled CVEs; % with p ≥ 0.5.\n"]
     out.append(md_table(con, """
         SELECT model,
                round(100.0 * avg((p_true >= 0.5)::INT) FILTER (question_id = 'multiple_vulns'), 1) AS multi_vuln_4_2_11,
@@ -496,34 +511,53 @@ def rules_section(con) -> str:
 
 
 def models_section(con) -> str:
-    out = ["## Clef vs Clef Flash\n", "How often the two models give the same answer on the same question:\n"]
+    out = ["## Clef 27B vs Clef Flash\n",
+           "How often the two models give the same answer on the same CVE (clarity: within half a level):\n"]
     out.append(md_table(con, """
-        SELECT f.pack, count(*) AS n,
+        SELECT f.question_id AS question, count(*) AS n,
                round(100.0 * avg(CASE WHEN f.type = 'noul' THEN ((f.p_true >= 0.5) = (c.p_true >= 0.5))::INT
                                       WHEN f.type = 'choice' THEN (f.choice = c.choice)::INT
                                       ELSE (abs(f.score - c.score) < 0.5)::INT END), 1) AS same_answer_pct,
                round(median(f.request_ms), 0) AS flash_ms, round(median(c.request_ms), 0) AS clef_ms
         FROM ans f JOIN ans c USING (cve_id, item, question_id)
-        WHERE f.model = 'clef-flash' AND c.model = 'clef' GROUP BY 1 ORDER BY 1
+        WHERE f.model = 'clef-flash' AND c.model = 'clef' AND f.question_id IN ('security_impact_stated', 'impact_basis', 'desc_clarity', 'desc_is_commit_message')
+        GROUP BY 1 ORDER BY 1
     """))
     return "\n".join(out)
 
 
-def report(con) -> str:
+def coverage_section(con) -> str:
+    rows = con.execute(f"""
+        SELECT count(*) AS published,
+               count(*) FILTER (cve_id IN (SELECT cve_id FROM ans WHERE model = '{CORPUS_MODEL}'
+                                           AND question_id = 'desc_clarity')) AS answered
+        FROM cves WHERE state = 'PUBLISHED'""").fetchone()
+    return (f"**Coverage:** {CORPUS_MODEL} has answered the core questions for {rows[1]:,} of {rows[0]:,} published CVEs "
+            f"({100 * rows[1] / rows[0]:.0f}%), in random order, so partial results are a random sample.\n")
+
+
+def report(con, experimental: bool = False) -> str:
     run = con.execute("SELECT repo_sha, repo_head_time, window_days, dev_slice_days FROM ingest_run").fetchone()
-    counts = con.execute("""SELECT model, pack, count(DISTINCT cve_id) cves, count(*) answers
-                            FROM ans GROUP BY ALL ORDER BY model DESC, pack""").fetchall()
     parts = [
         "# CLEFCVE results\n",
         f"Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC from cvelistV5 `{run[0][:12]}` "
-        f"(HEAD {run[1]:%Y-%m-%d %H:%M} UTC). Corpus: {run[2]}-day window; model runs use a random sample of "
-        f"the {run[3]}-day slice plus all recovered REJECTED records.\n",
-        "| model | pack | CVEs | answers |\n|---|---|---|---|\n" +
-        "\n".join(f"| {m} | {p} | {c} | {a} |" for m, p, c, a in counts) + "\n",
-        gold_section(con), vuln_section(con), description_section(con), cwe_section(con),
-        "## Q4: Is the CVSS correct?\n", jury_section(con), severity_section(con), cvss_section(con, "3.1"), cvss_section(con, "4.0"),
-        ssvc_section(con), rules_section(con), models_section(con),
+        f"(HEAD {run[1]:%Y-%m-%d %H:%M} UTC), {run[2]}-day window.\n",
+        "The tool does three things: deterministic rule checks on every record, and two Clef questions about the "
+        "description: does it establish a security impact, and how clear is it.\n",
+        coverage_section(con), rules_section(con), vuln_section(con), description_section(con), gold_section(con),
+        models_section(con),
     ]
+    if experimental:
+        counts = con.execute("""SELECT model, pack, count(DISTINCT cve_id) cves, count(*) answers
+                                FROM ans GROUP BY ALL ORDER BY model DESC, pack""").fetchall()
+        parts += [
+            "\n---\n# Experimental (shelved): CVSS, CWE, SSVC, judgment rules\n",
+            "| model | pack | CVEs | answers |\n|---|---|---|---|\n" +
+            "\n".join(f"| {m} | {p} | {c} | {a} |" for m, p, c, a in counts) + "\n",
+            "## Is the CVSS correct?\n", jury_section(con), severity_section(con), cvss_section(con, "3.1"),
+            cvss_section(con, "4.0"), cwe_section(con), ssvc_section(con), judgment_rules_section(con),
+            description_elements_section(con),
+        ]
     return "\n".join(parts)
 
 
@@ -531,10 +565,11 @@ def main(argv: list[str] | None = None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--db", type=Path, default=config.DB_PATH)
     p.add_argument("--answers-db", type=Path, default=config.ANSWERS_DB_PATH)
-    p.add_argument("--out", type=Path, default=config.PROJECT_ROOT / "data" / "reports" / "first_results.md")
+    p.add_argument("--out", type=Path, default=config.PROJECT_ROOT / "data" / "reports" / "results.md")
+    p.add_argument("--experimental", action="store_true", help="also report the shelved CVSS/CWE/SSVC experiments")
     args = p.parse_args(argv)
     con = connect(args.db, args.answers_db)
-    text = report(con)
+    text = report(con, experimental=args.experimental)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(text)
     print(text)
