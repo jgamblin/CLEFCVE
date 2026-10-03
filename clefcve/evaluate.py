@@ -91,14 +91,13 @@ def cvss_section(con, version: str) -> str:
         FROM cmp_{prefix} GROUP BY metric, model, source
         ORDER BY array_position({metrics}, metric), model DESC, source DESC
     """))
-    out.append("\n**Human-vs-human reference:** CNA vs CISA ADP agreement on the same CVEs (v3.x only; CISA "
-               "publishes v3.1).\n" if version == "3.1" else "")
+    out.append("\n**Human-vs-human reference:** CNA vs CISA ADP agreement over the whole 60-day corpus "
+               "(CISA usually adds CVSS only when the CNA didn't, so overlap is small).\n" if version == "3.1" else "")
     if version == "3.1":
         out.append(md_table(con, f"""
             SELECT a.metric, count(*) AS n, round(100.0 * avg((a.value = b.value)::INT), 1) AS cna_vs_cisa_agree_pct
             FROM reflong_{prefix} a JOIN reflong_{prefix} b USING (cve_id, metric)
             WHERE a.source = 'cna' AND b.source = 'CISA-ADP' AND a.value <> '' AND b.value <> ''
-              AND a.cve_id IN (SELECT cve_id FROM ans)
             GROUP BY a.metric ORDER BY array_position({metrics}, a.metric)
         """))
     out.append("\nWhere Clef most confidently disagrees with the CNA (metric value it rated least likely):\n")
@@ -120,10 +119,13 @@ def severity_section(con) -> str:
     for version, prefix, metrics in (("3.1", "cvss31", CVSS31), ("4.0", "cvss40", CVSS40)):
         versions = ("3.0", "3.1") if version == "3.1" else ("4.0",)
         picks = con.execute(f"""
+            WITH r AS (
+                SELECT cve_id, base_score, vector FROM metrics
+                WHERE source = 'cna' AND version IN {versions!r}
+                QUALIFY row_number() OVER (PARTITION BY cve_id ORDER BY version DESC, vector) = 1)
             SELECT x.model, x.cve_id, map(list(substr(x.question_id, 8)), list(x.choice)) AS m,
                    any_value(r.base_score) AS cna_score, any_value(r.vector) AS cna_vector
-            FROM ans x JOIN metrics r ON r.cve_id = x.cve_id AND r.source = 'cna'
-                                     AND r.version IN {versions!r}
+            FROM ans x JOIN r USING (cve_id)
             WHERE x.pack = '{prefix}' GROUP BY x.model, x.cve_id
         """.replace(",)", ")")).fetchall()
         for model, cve_id, m, cna_score, cna_vector in picks:

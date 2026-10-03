@@ -37,21 +37,24 @@ questions:
       C: Changed. Impact reaches other components, for example XSS affecting the user's browser, or a sandbox or VM escape.
   cvss31_C:
     type: choice
-    instructions: CVSS v3.1 Confidentiality impact.
+    instructions: >-
+      CVSS v3.1 Confidentiality impact. Infer from the outcome stated or clearly implied. Arbitrary code or command execution, full account or system takeover, or reading arbitrary files implies High. Exposure of some limited or non-critical data implies Low. Choose None only when the outcome cannot affect confidentiality (for example a pure crash or denial of service).
     criteria:
       N: None. No loss of confidentiality.
       L: Low. Some restricted information is disclosed, but the attacker has no control over what is obtained or the loss is limited.
       H: High. Total loss of confidentiality, or disclosure of critical information such as credentials or keys.
   cvss31_I:
     type: choice
-    instructions: CVSS v3.1 Integrity impact.
+    instructions: >-
+      CVSS v3.1 Integrity impact. Infer from the outcome stated or clearly implied. Arbitrary code or command execution, full takeover, or writing arbitrary data implies High. Limited modification (for example injecting content into a page, changing some settings) implies Low. Choose None only when the outcome cannot modify anything (for example a pure information leak or crash).
     criteria:
       N: None. No loss of integrity.
       L: Low. Some data can be modified, but with limited control or limited consequence.
       H: High. Total loss of integrity, or the attacker can modify any or critical data.
   cvss31_A:
     type: choice
-    instructions: CVSS v3.1 Availability impact.
+    instructions: >-
+      CVSS v3.1 Availability impact. Infer from the outcome stated or clearly implied. Arbitrary code execution, full takeover, a crash, kernel panic, hang, or sustained denial of service implies High. Degraded performance or partial interruption implies Low. Choose None only when the outcome cannot affect availability (for example a pure information leak or XSS).
     criteria:
       N: None. No impact on availability.
       L: Low. Reduced performance or interruptions; the resource is not fully denied.

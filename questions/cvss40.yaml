@@ -38,21 +38,24 @@ questions:
       A: Active. Specific, conscious interaction, such as opening a file, clicking a crafted link, or dismissing warnings.
   cvss40_VC:
     type: choice
-    instructions: CVSS v4.0 Confidentiality impact on the vulnerable system itself.
+    instructions: >-
+      CVSS v4.0 Confidentiality impact on the vulnerable system itself. Infer from the outcome stated or clearly implied. Arbitrary code or command execution, full account or system takeover, or reading arbitrary files implies High. Exposure of some limited or non-critical data implies Low. Choose None only when the outcome cannot affect confidentiality (for example a pure crash or denial of service).
     criteria:
       N: None. No loss of confidentiality within the vulnerable system.
       L: Low. Some restricted information is disclosed, with limited control or extent.
       H: High. Total loss of confidentiality, or disclosure of critical information.
   cvss40_VI:
     type: choice
-    instructions: CVSS v4.0 Integrity impact on the vulnerable system itself.
+    instructions: >-
+      CVSS v4.0 Integrity impact on the vulnerable system itself. Infer from the outcome stated or clearly implied. Arbitrary code or command execution, full takeover, or writing arbitrary data implies High. Limited modification (for example injecting content into a page, changing some settings) implies Low. Choose None only when the outcome cannot modify anything (for example a pure information leak or crash).
     criteria:
       N: None. No loss of integrity within the vulnerable system.
       L: Low. Some data can be modified, with limited control or consequence.
       H: High. Total loss of integrity, or modification of any or critical data.
   cvss40_VA:
     type: choice
-    instructions: CVSS v4.0 Availability impact on the vulnerable system itself.
+    instructions: >-
+      CVSS v4.0 Availability impact on the vulnerable system itself. Infer from the outcome stated or clearly implied. Arbitrary code execution, full takeover, a crash, kernel panic, hang, or sustained denial of service implies High. Degraded performance or partial interruption implies Low. Choose None only when the outcome cannot affect availability (for example a pure information leak or XSS).
     criteria:
       N: None. No impact on availability of the vulnerable system.
       L: Low. Reduced performance or interruptions.
