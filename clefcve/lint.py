@@ -129,9 +129,10 @@ def lint_record(cve: dict, cna_cwes: list[dict], cna_metrics: list[dict], catalo
     vendors = {(a.get("vendor") or "").strip() for a in named} - {""}
     out.append(("affected_vendor", _status(any(v.lower() not in NA_VALUES for v in vendors), "warn")
                 if named else "na", ",".join(sorted(vendors))[:80]))
-    statuses = {a.get("defaultStatus") for a in affected} | {
+    # CVE JSON 5: an omitted defaultStatus means "unknown", which satisfies 5.1.4.
+    statuses = {a.get("defaultStatus") or "unknown(implicit)" for a in affected} | {
         v.get("status") for a in affected for v in a.get("versions", [])}
-    out.append(("affected_status", _status(bool(statuses & {"affected", "unknown"})),
+    out.append(("affected_status", _status(bool(statuses & {"affected", "unknown", "unknown(implicit)"})),
                 ",".join(sorted(s for s in statuses if s))))
     has_fix = any(v.get("lessThan") or v.get("status") == "unaffected" or v.get("changes")
                   for a in affected for v in a.get("versions", []))

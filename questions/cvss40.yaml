@@ -1,0 +1,80 @@
+# Q4: independent CVSS v4.0 base-metric assessment from the title + description only (no assigned vector).
+pack: cvss40
+state: description_only
+questions:
+  cvss40_AV:
+    type: choice
+    instructions: CVSS v4.0 Attack Vector. How does the attacker reach the vulnerable system?
+    criteria:
+      N: Network. Exploitable remotely across a routed network such as the internet.
+      A: Adjacent. Limited to a shared physical or logical network such as Bluetooth, local Wi-Fi, or the same subnet.
+      L: Local. Requires local access, or a user opening a malicious file.
+      P: Physical. Requires physically touching or manipulating the device.
+  cvss40_AC:
+    type: choice
+    instructions: CVSS v4.0 Attack Complexity. Must the attacker evade or circumvent security-enhancing conditions?
+    criteria:
+      L: Low. No specific exploit-mitigation evasion or target-specific secrets are needed.
+      H: High. The attacker must defeat mitigations such as ASLR or DEP, or obtain target-specific secrets such as keys.
+  cvss40_AT:
+    type: choice
+    instructions: CVSS v4.0 Attack Requirements. Does success depend on deployment or execution conditions of the vulnerable system?
+    criteria:
+      N: None. Works regardless of deployment or execution conditions.
+      P: Present. Needs specific conditions, such as winning a race, a non-default configuration, or a man-in-the-middle position.
+  cvss40_PR:
+    type: choice
+    instructions: CVSS v4.0 Privileges Required. What privileges must the attacker have before exploiting?
+    criteria:
+      N: None. Unauthenticated.
+      L: Low. Basic user privileges, such as an ordinary authenticated account.
+      H: High. Significant privileges, such as an administrator.
+  cvss40_UI:
+    type: choice
+    instructions: CVSS v4.0 User Interaction. Must a human user other than the attacker take part?
+    criteria:
+      N: None. No interaction from any other user.
+      P: Passive. Limited, involuntary interaction, such as visiting a page or viewing content that contains a stored payload.
+      A: Active. Specific, conscious interaction, such as opening a file, clicking a crafted link, or dismissing warnings.
+  cvss40_VC:
+    type: choice
+    instructions: CVSS v4.0 Confidentiality impact on the vulnerable system itself.
+    criteria:
+      N: None. No loss of confidentiality within the vulnerable system.
+      L: Low. Some restricted information is disclosed, with limited control or extent.
+      H: High. Total loss of confidentiality, or disclosure of critical information.
+  cvss40_VI:
+    type: choice
+    instructions: CVSS v4.0 Integrity impact on the vulnerable system itself.
+    criteria:
+      N: None. No loss of integrity within the vulnerable system.
+      L: Low. Some data can be modified, with limited control or consequence.
+      H: High. Total loss of integrity, or modification of any or critical data.
+  cvss40_VA:
+    type: choice
+    instructions: CVSS v4.0 Availability impact on the vulnerable system itself.
+    criteria:
+      N: None. No impact on availability of the vulnerable system.
+      L: Low. Reduced performance or interruptions.
+      H: High. Total loss of availability, such as a crash or sustained denial of service.
+  cvss40_SC:
+    type: choice
+    instructions: CVSS v4.0 Confidentiality impact on subsequent systems beyond the vulnerable system (for example a user's browser or other hosts).
+    criteria:
+      N: None. No impact beyond the vulnerable system.
+      L: Low. Some information in subsequent systems is disclosed.
+      H: High. Total loss of confidentiality in subsequent systems.
+  cvss40_SI:
+    type: choice
+    instructions: CVSS v4.0 Integrity impact on subsequent systems beyond the vulnerable system (for example a user's browser or other hosts).
+    criteria:
+      N: None. No impact beyond the vulnerable system.
+      L: Low. Limited modification in subsequent systems, such as script running in a victim's browser session.
+      H: High. Total loss of integrity in subsequent systems.
+  cvss40_SA:
+    type: choice
+    instructions: CVSS v4.0 Availability impact on subsequent systems beyond the vulnerable system.
+    criteria:
+      N: None. No impact beyond the vulnerable system.
+      L: Low. Reduced availability of subsequent systems.
+      H: High. Total loss of availability of subsequent systems.

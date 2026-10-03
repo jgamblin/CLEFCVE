@@ -1,0 +1,186 @@
+# Q1 (is it a vulnerability), Q2 (description quality), judgment-based CNA rules, product context, and SSVC,
+# judged from the title + description only. Assigned CVSS/CWE are deliberately NOT in the state.
+pack: quality
+state: description_only
+questions:
+
+  # ---- Q1: is this a vulnerability? (CNA Rules 4.1) ----
+  is_vuln:
+    type: noul
+    instructions: >-
+      Does this CVE record describe a genuine security vulnerability? A vulnerability is a weakness in a
+      product that can be exploited, causing a negative impact to confidentiality, integrity, or
+      availability, or that allows violation of an explicit or implicit security policy.
+    criteria:
+      "false": >-
+        Not a vulnerability: a functional bug with no security impact, hardening or best-practice advice,
+        intended or by-design behavior, a configuration change made by an authorized administrator,
+        an action that requires privileges which already grant the same impact, merely updating a
+        dependency, a product being end-of-life, deliberately malicious code, or brute-force flooding.
+      "true": >-
+        A genuine vulnerability: an attacker can gain access, capabilities, or information beyond what
+        they are authorized for, or reduce availability, by exploiting a weakness in the product.
+
+  vuln_reason:
+    type: choice
+    instructions: Which best characterizes what this CVE record describes?
+    criteria:
+      real_vulnerability: An exploitable security weakness with a clear security impact.
+      no_security_impact: A functional or reliability bug with no stated or plausible security impact.
+      by_design_or_admin_config: Intended behavior, or a setting an authorized administrator chose to change.
+      requires_equivalent_privilege: Exploitation needs privileges that already allow the same impact.
+      dependency_update_only: Only about updating a bundled third-party library that had its own vulnerability.
+      end_of_life_only: Only states that a product is end-of-life or unsupported.
+      physical_or_bruteforce: Physical theft/damage, or brute-force/high-volume denial of service.
+      insufficient_information: Too little information to tell what the issue is or whether it matters.
+
+  # ---- Q2: is the description well written? (CNA Rules 5.1.1-5.1.7, 5.2; Key Details Phrasing) ----
+  desc_names_product:
+    type: noul
+    instructions: Judge only the description text. Does it name the specific affected product (and its vendor or project)?
+    criteria:
+      "false": The product is missing, generic, or ambiguous.
+      "true": The specific product (and vendor or project) is named.
+  desc_names_versions:
+    type: noul
+    instructions: Judge only the description text. Does it state the affected versions, a version range, or the fixed version?
+    criteria:
+      "false": No version information.
+      "true": Affected or fixed versions are stated.
+  desc_names_vuln_type:
+    type: noul
+    instructions: >-
+      Judge only the description text. Does it state the type of vulnerability or weakness (for example
+      SQL injection, use-after-free, path traversal, missing authorization)?
+    criteria:
+      "false": The vulnerability type is not stated or is only vague ("a security issue", "a vulnerability").
+      "true": A specific vulnerability or weakness type is stated.
+  desc_names_attacker:
+    type: noul
+    instructions: >-
+      Judge only the description text. Does it state who can exploit the issue and under what preconditions
+      (for example an unauthenticated remote attacker, an authenticated user with contributor role, a local user)?
+    criteria:
+      "false": The attacker and preconditions are not stated.
+      "true": The attacker and preconditions are stated.
+  desc_names_impact:
+    type: noul
+    instructions: >-
+      Judge only the description text. Does it state the impact of successful exploitation (for example execute
+      arbitrary code, read arbitrary files, escalate privileges, cause a crash)?
+    criteria:
+      "false": The impact is not stated.
+      "true": The impact is stated.
+  desc_names_vector:
+    type: noul
+    instructions: >-
+      Judge only the description text. Does it identify the attack vector or the affected component (for example
+      a parameter, endpoint, function, file, API, or protocol message)?
+    criteria:
+      "false": No vector or component is identified.
+      "true": A specific vector or component is identified.
+  desc_clarity:
+    type: score
+    instructions: >-
+      Rate how clear, specific, and useful the description is for a defender deciding whether they are affected
+      and how serious the issue is.
+    criteria:
+      - Unusable. Placeholder, nonsense, or no meaningful information about the vulnerability.
+      - Poor. Vague or confusing; a defender cannot tell what is affected or what the risk is.
+      - Adequate. Identifies the product and the problem but omits important details such as versions, attacker, or impact.
+      - Good. Clear product, versions, vulnerability type, attacker, and impact, with minor gaps.
+      - Excellent. Precise and complete; product, versions, component, vulnerability type, attacker, preconditions, and impact.
+  desc_is_commit_message:
+    type: noul
+    instructions: >-
+      Is the description primarily a source-code commit message or changelog entry describing a code change,
+      rather than an explanation of the security vulnerability and its impact?
+    criteria:
+      "false": It explains the vulnerability to users of the product.
+      "true": It is mainly a developer-oriented commit message or changelog of the fix.
+  desc_is_boilerplate:
+    type: noul
+    instructions: >-
+      Does the description read as generic, templated, or machine-generated filler: vague or inflated language
+      with few concrete technical specifics about this particular issue?
+    criteria:
+      "false": It contains concrete specifics about this particular issue.
+      "true": It is generic filler that could describe many different issues.
+  desc_has_credits:
+    type: noul
+    instructions: Does the description credit or thank people, organizations, or tools (for example "reported by", "discovered by", "thanks to")?
+    criteria:
+      "false": No credits or acknowledgements.
+      "true": Credits or acknowledges people, organizations, or tools.
+  desc_has_irrelevant_info:
+    type: noul
+    instructions: >-
+      Does the description contain information that is not relevant to identifying and describing the
+      vulnerability, such as advertising, marketing, inappropriate language, or unrelated instructions?
+    criteria:
+      "false": Everything in it is relevant to the vulnerability.
+      "true": It contains irrelevant content such as advertising or marketing.
+
+  # ---- Rules compliance needing judgment (CNA Rules 4.1.12, 4.2.11, 5.1.11.1) ----
+  multiple_vulns:
+    type: noul
+    instructions: >-
+      Does this single record describe multiple distinct, independently fixable vulnerabilities (rather than one
+      vulnerability, possibly reachable through several parameters or code paths)?
+    criteria:
+      "false": One vulnerability.
+      "true": Several distinct, independently fixable vulnerabilities in one record.
+  hosted_service_only:
+    type: noul
+    instructions: >-
+      Does the affected product exist only as a fully hosted cloud or SaaS service that customers cannot download,
+      install, or run themselves?
+    criteria:
+      "false": Installable, downloadable, on-premises, firmware, library, or otherwise customer-run product.
+      "true": Exclusively a hosted service operated by the vendor.
+
+  # ---- Context ----
+  product_category:
+    type: choice
+    instructions: What kind of product is affected?
+    criteria:
+      web_application: A standalone web application or web-based admin panel.
+      cms_plugin: A plugin, theme, extension, or module for WordPress, Drupal, Joomla, or a similar CMS.
+      os_kernel: An operating-system kernel or kernel driver.
+      os_component: A user-space operating-system component, system service, or bundled utility.
+      library: A software library, framework, SDK, or package used by other software.
+      browser: A web browser or browser engine.
+      network_device: A router, switch, firewall, VPN gateway, or other network appliance.
+      iot_firmware: Embedded, IoT, camera, or consumer-device firmware.
+      ics_ot: Industrial control, SCADA, PLC, medical, or other operational-technology system.
+      mobile_app: A mobile application.
+      desktop_app: A desktop or client application.
+      server_software: Server software such as a database, mail server, web server, middleware, or enterprise platform.
+      cloud_service: A hosted cloud or SaaS service.
+      ai_ml: An AI or machine-learning model, agent, or LLM application.
+      dev_tool: A developer tool, CI/CD system, or build tool.
+      hardware: A CPU, chipset, or other hardware component.
+      other: Something else.
+
+  # ---- SSVC decision points (CISA Vulnrichment publishes these) ----
+  ssvc_exploitation:
+    type: choice
+    instructions: Based only on the record, what is the evidence of exploitation?
+    criteria:
+      none: No evidence of active exploitation and no public proof of concept is mentioned.
+      poc: A public proof of concept or exploit is mentioned or clearly available.
+      active: Reports of exploitation in the wild are mentioned.
+  ssvc_automatable:
+    type: noul
+    instructions: >-
+      Can an attacker reliably automate the first four steps of the kill chain (reconnaissance, weaponization,
+      delivery, exploitation) for this vulnerability across many targets?
+    criteria:
+      "false": No. Exploitation needs user interaction, a specific position, credentials, or other manual steps.
+      "true": Yes. It is reachable and exploitable without human intervention, for example unauthenticated over the network.
+  ssvc_technical_impact:
+    type: choice
+    instructions: If exploited, what is the technical impact on the vulnerable system?
+    criteria:
+      partial: Limited control over, or limited information exposure from, the system.
+      total: Total control of the system's behavior, or total disclosure of all its information.

@@ -1,0 +1,58 @@
+# Q4: independent CVSS v3.1 base-metric assessment from the title + description only (no assigned vector).
+pack: cvss31
+state: description_only
+questions:
+  cvss31_AV:
+    type: choice
+    instructions: CVSS v3.1 Attack Vector. How does the attacker reach the vulnerable component?
+    criteria:
+      N: Network. Exploitable remotely across a routed network such as the internet, for example by sending requests to a server.
+      A: Adjacent. Limited to a shared physical or logical network such as Bluetooth, local Wi-Fi, or the same subnet.
+      L: Local. Requires local access such as a local account or shell, or a user opening a malicious file.
+      P: Physical. Requires physically touching or manipulating the device.
+  cvss31_AC:
+    type: choice
+    instructions: CVSS v3.1 Attack Complexity. Do conditions beyond the attacker's control need to exist?
+    criteria:
+      L: Low. No special conditions; the attacker can expect repeatable success.
+      H: High. Success depends on conditions beyond attacker control, such as winning a race, a man-in-the-middle position, or target-specific secrets.
+  cvss31_PR:
+    type: choice
+    instructions: CVSS v3.1 Privileges Required. What privileges must the attacker have before exploiting?
+    criteria:
+      N: None. Unauthenticated.
+      L: Low. Basic user privileges, such as an ordinary authenticated account, subscriber, or contributor.
+      H: High. Significant privileges, such as an administrator.
+  cvss31_UI:
+    type: choice
+    instructions: CVSS v3.1 User Interaction. Must a user other than the attacker take part?
+    criteria:
+      N: None. Exploitable without any action from another user.
+      R: Required. A victim must take some action, such as clicking a link, opening a file, or viewing a page.
+  cvss31_S:
+    type: choice
+    instructions: CVSS v3.1 Scope. Does a successful attack impact components beyond the vulnerable component's security authority?
+    criteria:
+      U: Unchanged. Impact is limited to the vulnerable component.
+      C: Changed. Impact reaches other components, for example XSS affecting the user's browser, or a sandbox or VM escape.
+  cvss31_C:
+    type: choice
+    instructions: CVSS v3.1 Confidentiality impact.
+    criteria:
+      N: None. No loss of confidentiality.
+      L: Low. Some restricted information is disclosed, but the attacker has no control over what is obtained or the loss is limited.
+      H: High. Total loss of confidentiality, or disclosure of critical information such as credentials or keys.
+  cvss31_I:
+    type: choice
+    instructions: CVSS v3.1 Integrity impact.
+    criteria:
+      N: None. No loss of integrity.
+      L: Low. Some data can be modified, but with limited control or limited consequence.
+      H: High. Total loss of integrity, or the attacker can modify any or critical data.
+  cvss31_A:
+    type: choice
+    instructions: CVSS v3.1 Availability impact.
+    criteria:
+      N: None. No impact on availability.
+      L: Low. Reduced performance or interruptions; the resource is not fully denied.
+      H: High. Total loss of availability, such as a crash or sustained denial of service.

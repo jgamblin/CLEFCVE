@@ -1,0 +1,22 @@
+# Q3: does the CNA-assigned CWE fit the description? One request per (CVE, assigned CWE).
+pack: cwe_verify
+state: description_with_cwe
+questions:
+  cwe_fit:
+    type: choice
+    instructions: >-
+      Compare the assigned CWE with the vulnerability described. CWE entries should describe the root-cause
+      weakness, not the impact or a consequence. How well does the assigned CWE fit?
+    criteria:
+      exact: The assigned CWE precisely describes the root-cause weakness in the description.
+      too_general: Right direction, but a broad class or parent; a more specific CWE clearly fits better.
+      too_specific: A narrower variant whose details don't match what is described.
+      impact_not_cause: It names the consequence or impact (for example information exposure or denial of service) rather than the root cause.
+      related_but_wrong: A related weakness, but not the one described.
+      wrong: Unrelated to the vulnerability described.
+  cwe_acceptable:
+    type: noul
+    instructions: Would a careful CWE analyst accept the assigned CWE as a reasonable mapping for this vulnerability?
+    criteria:
+      "false": No. It should be changed.
+      "true": Yes. It is a reasonable mapping.

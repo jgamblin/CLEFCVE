@@ -5,6 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 CVELIST_REPO = Path(os.environ.get("CLEFCVE_REPO", "~/Data/cvelistV5")).expanduser()
 DB_PATH = Path(os.environ.get("CLEFCVE_DB", PROJECT_ROOT / "data" / "clefcve.duckdb"))
+ANSWERS_DB_PATH = Path(os.environ.get("CLEFCVE_ANSWERS_DB", PROJECT_ROOT / "data" / "answers.duckdb"))
 
 # Corpus window, in days before the repo HEAD commit time.
 WINDOW_DAYS = 60

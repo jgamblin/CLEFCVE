@@ -3,7 +3,7 @@ name = "clefcve"
 version = "0.1.0"
 description = "Audit recent CVE records with Cloudflare's Clef decision models via Ollama"
 requires-python = ">=3.12"
-dependencies = ["duckdb>=1.1", "pyarrow>=17", "pytz"]
+dependencies = ["duckdb>=1.1", "pyarrow>=17", "pytz", "cvss>=3", "pyyaml>=6"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

@@ -17,8 +17,7 @@ def run(desc="Stored XSS in the Foo plugin for WordPress before 1.2 allows attac
         "affected": affected,
         "references": [{"url": u} for u in refs]}}}
     cve = {"cve_id": cve_id, "description": desc, "record": json.dumps(record)}
-    return {(c, d): s for c, s, d in lint_record(cve, list(cwes), list(metrics), CATALOG)} | \
-        {c: s for c, s, _ in lint_record(cve, list(cwes), list(metrics), CATALOG)}
+    return {c: s for c, s, _ in lint_record(cve, list(cwes), list(metrics), CATALOG)}
 
 
 def test_clean_record_passes_core_checks():
