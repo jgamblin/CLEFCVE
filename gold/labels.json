@@ -1,1 +1,12 @@
-{}
+{
+ "CVE-2026-5132": {
+  "cwe_fit": {
+   "CWE-409": "exact"
+  },
+  "desc_clarity": 3,
+  "impact_basis": "stated_explicitly",
+  "is_vuln": "y",
+  "labeled_at": "2026-10-03T18:11:12.045209+00:00",
+  "security_impact": "y"
+ }
+}

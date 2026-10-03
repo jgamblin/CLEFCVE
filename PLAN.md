@@ -127,12 +127,22 @@ Full tables: `reports/2026-10-03-first-results.md`. Regenerate with `python -m c
 
 **Prompt tuning so far.** Early CVSS impact questions under-rated impact. Spelling out how a stated outcome maps to an impact level raised Flash's C agreement from 38% to 52% and removed the bias.
 
+### Update (same day): Q1 rephrased, Clef 27B on all 300, LLM jury
+
+- **Q1 is now "does the description establish a security impact?"** (`security_impact_stated` plus `impact_basis`). Clef 27B finds no stated impact in **95% of Linux kernel descriptions**, versus 0–12% for every other CNA with at least 5 CVEs in the sample.
+- **Clef 27B on all 300:** matches the CNA's CVSS v3.1 severity band **65%** of the time (Flash 45%), with a mean score difference of 1.2.
+- **Hand labels cover Q1 and clarity only.** The labeling app is `python -m clefcve.labeler`; labels go to `gold/labels.json`. Scoring CVSS and CWE by hand was too slow for a POC.
+- **CVSS and CWE references come from an LLM jury.** Five local models score the first 150 sampled CVEs from the same text Clef sees: gpt-oss:20b, granite4.2:30b, nemotron-3.5-lightning:30b, foundation-sec-8b and qwen3.6:35b. Qwen 3.8 is excluded because Clef is built on it. The strict-majority vote per field is the reference.
+  - **The jury often disagrees with itself on impact:** unanimous on Scope 22% of the time and on Availability 15%. Exploitability is far more stable (AC 99%, UI 79%).
+  - **Clef vs CNA, judged by the jury:** Clef is closer or tied on **7 of 8 metrics** (AC 92% vs 85%, S 82% vs 75%, C 63% vs 59%, I 63% vs 59%); the CNA is ahead only on UI (93% vs 92%).
+  - **Clef is about as good as one strong general model.** Its average agreement with the jury (about 76%) matches each juror's agreement with the other four (70–78%). Its advantages are probabilities you can threshold and guaranteed-valid outputs, not better judgment.
+  - **The jury doesn't help with CWE.** Its preferred CWE equals the CNA's 95% of the time, so it can't confirm or refute Clef's harsher "too general" calls (21%).
+  - **Caveat:** the jurors got the same impact-inference guidance as Clef's CVSS questions, so they may share some biases with Clef.
+
 ### Next
-1. Finish Clef 27B CVSS/CWE on the remaining 150 sampled CVEs: `MODELS=clef ./scripts/first_results.sh` from a terminal.
-2. Hand-label `data/gold/to_label.csv` (150 rows). Every number above is *agreement*, not accuracy.
-3. Change Q1 from "is this a vulnerability" to "is a security impact stated", which is what the model can actually judge from the text.
-4. Full 60-day runs: Flash for description quality (about 24 h for the quality pack), Clef 27B for CVSS and CWE on the CVEs flagged by lint or Flash.
-5. Per-CNA report card artifact.
+1. Finish hand-labeling Q1 and clarity in the labeling app.
+2. Full 60-day runs: Flash for the quality pack (Q1 and clarity, about 24 h); Clef 27B for CVSS and CWE only on CVEs that lint or Flash flags.
+3. Per-CNA report card artifact.
 
 ## Architecture (lightweight)
 
