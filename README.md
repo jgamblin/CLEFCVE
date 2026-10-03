@@ -14,3 +14,24 @@ git -C ~/Data/cvelistV5 pull
 .venv/bin/python -m clefcve.ingest --days 60 --dev-days 30
 ```
 Writes `data/clefcve.duckdb` (override with `--db` or `CLEFCVE_DB`). Rebuilt from scratch on each run.
+
+## Stage 2 — deterministic lint (no model)
+```bash
+.venv/bin/python -m clefcve.lint
+```
+Needs the CWE catalog in `data/ref/` (`curl -sSLO https://cwe.mitre.org/data/xml/cwec_latest.xml.zip && unzip` there). 23 checks mapped to CNA Operational Rules 4.1.0 → `lint` table.
+
+## Stage 3+ — ask Clef
+Question packs live in [`questions/`](questions/) (YAML; editing a question's wording re-asks only that question).
+```bash
+.venv/bin/python -m clefcve.run --pack quality --model clef --sample 300 --include-rejected
+SAMPLE=300 ./scripts/first_results.sh          # every pack, Flash then Clef
+.venv/bin/python -m clefcve.evaluate           # → data/reports/first_results.md
+```
+Answers are cached in `data/answers.duckdb`.
+
+## Gold set
+```bash
+.venv/bin/python -m clefcve.gold export        # → data/gold/to_label.csv (150 rows)
+.venv/bin/python -m clefcve.gold import data/gold/to_label.csv
+```

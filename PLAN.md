@@ -83,6 +83,29 @@ Clef is a **decision model, not a chat model**. It scores typed questions agains
 
 **Tables:** `cves` (one row per CVE, with the raw `record` JSON), `cwes`, `metrics` (CVSS by source and version), `ssvc`, `kev`, `refs`, `affected`, and `ingest_run`, which records the repo SHA, the window and stats. Each child table has a `source` column: `cna`, `CISA-ADP`, and so on.
 
+## Stage 2 results (2026-10-03)
+
+`python -m clefcve.lint` runs 23 checks on all 27,489 CVEs in about 3 s. The checks map to CNA Operational Rules **4.1.0** (`data/ref/CNA_Rules_v4.1.0.pdf`) and CWE **v4.20**.
+
+**Bugs in my checks, caught and fixed before trusting the numbers:**
+- **CVSS 4.0 vectors with threat metrics.** VulDB's vectors include `E:P`. The CVSS-B base score has to be computed from base metrics only; otherwise 1,390 records falsely "mismatch".
+- **WPScan vendors.** WPScan sets vendor to `Unknown` but names the product. Rule 5.1.3 is about the product, so a missing vendor is now a separate SHOULD-level warning.
+- **Mozilla affected status.** Mozilla omits `defaultStatus`. The CVE 5 schema treats that as "unknown", which satisfies 5.1.4.
+
+**Headline findings:**
+- **No vulnerability type, a MUST in 5.1.7, is 18.5% of records.** Linux (3,753 CVEs, 100%), Mozilla, HPE and MITRE (`n/a`) all omit problemTypes.
+- **No structured CWE: 30.5%.**
+- **Prohibited or Discouraged CWE: 15%,** mostly Discouraged entries like CWE-20, CWE-200 and CWE-284.
+- **Identical description shared with other CVEs: 7.1%.** For example, 31 Adobe AEM XSS CVEs and 30 NVIDIA CVEs share one description each.
+- **Stated CVSS score doesn't match the vector: 200 records.** Some CNAs put the temporal score in `baseScore`.
+
+## Stage 3 notes
+
+- **Packs:** `quality` (19 questions: Q1, Q2, judgment-based rules, product category, SSVC), `cvss31` (8), `cvss40` (11), `cwe_verify` (2 per assigned CWE). The CVSS and quality packs see **only the title and description**, never the assigned vector or CWE, so the answers are independent.
+- **Cost is about 0.5 s per question on Clef 27B.** 38 questions take ≈ 20 s, 8 take ≈ 4 s. Batching a few questions per request costs a little accuracy. **Parallel requests give no speedup**, because Ollama serializes them.
+- **Clef 27B is clearly better than Flash at CVSS.** On a WordPress SSRF, Flash picked AV:L. On kernel bugs, Flash guessed PR:H.
+- **Data files:** answers go in `data/answers.duckdb`, opened briefly for each write so the corpus DB stays readable. `clefcve.gold export` writes a 150-row stratified CSV for hand labeling: at most 3 CVEs per CNA, plus 21 rejected records.
+
 ## Architecture (lightweight)
 
 ```
