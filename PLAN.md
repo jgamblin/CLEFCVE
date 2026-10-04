@@ -36,7 +36,7 @@ Clef is a **decision model, not a chat model**. It scores typed questions agains
 11. **Product / attack-surface category**: web app, WordPress plugin, OS/kernel, library, firmware/IoT, network device, AI/LLM app, mobile, ICS, and so on. This is mainly for slicing the results.
 12. **Reference quality**: is there a patch, advisory or PoC? Is each reference relevant? We classify each reference from its URL and tags.
 13. **Severity drift**: is the assigned severity inflated or deflated compared with the model's own estimate? This comes out of #4.
-14. **Rollup**: a per-CNA report card that combines all of the above. **This is probably the headline output.**
+14. **Rollup**: a per-CNA page that combines all of the above. **This is probably the headline output.**
 
 ## Data
 
@@ -102,7 +102,7 @@ Clef is a **decision model, not a chat model**. It scores typed questions agains
 ## Stage 3 notes
 
 - **Packs:** `quality` (19 questions: Q1, Q2, judgment-based rules, product category, SSVC), `cvss31` (8), `cvss40` (11), `cwe_verify` (2 per assigned CWE). The CVSS and quality packs see **only the title and description**, never the assigned vector or CWE, so the answers are independent.
-- **Cost is about 0.5 s per question on Clef 27B.** 38 questions take ≈ 20 s, 8 take ≈ 4 s. Batching a few questions per request costs a little accuracy. **Parallel requests give no speedup**, because Ollama serializes them.
+- **Cost is about 0.6 s per question on Clef 27B** once a request carries 8 or more questions (single-runner medians: 8 questions 4.9 s, 11 questions 6.5 s, 19 questions 11.4 s). A 2-question request still takes 2.0 s, so each request has a fixed overhead. Batching a few questions per request costs a little accuracy. **Parallel requests give no speedup**, because Ollama serializes them.
 - **Clef 27B is clearly better than Flash at CVSS.** On a WordPress SSRF, Flash picked AV:L. On kernel bugs, Flash guessed PR:H.
 - **Data files:** answers go in `data/answers.duckdb`, opened briefly for each write so the corpus DB stays readable. `clefcve.gold export` writes a 150-row stratified CSV for hand labeling: at most 3 CVEs per CNA, plus 21 rejected records.
 
@@ -123,7 +123,7 @@ Full tables: `reports/2026-10-03-first-results.md`. Regenerate with `python -m c
 | **Q5 Rules** | ✅ Mostly deterministic | See Stage 2. Judgment rules: about 6% of records bundle multiple vulnerabilities, about 1% credit people. |
 | **SSVC vs CISA** | Mixed | Technical impact 84% vs a 60% baseline (real skill). Exploitation 86% vs 80%, Automatable 76% vs 75% (no skill from the text alone). |
 
-**Model comparison.** The two models give the same answer 81–93% of the time. Clef 27B is about 3.5–4× slower: roughly 11 s per CVE for the quality pack and 4.6 s for CVSS v3.1. Flash is fine for description quality. Use Clef 27B for CVSS and CWE.
+**Model comparison.** The two models give the same answer 81–93% of the time. Clef 27B is about 3.5–4× slower: roughly 11.4 s per CVE for the quality pack and 4.9 s for CVSS v3.1 (single-runner medians). Flash is fine for description quality. Use Clef 27B for CVSS and CWE.
 
 **Prompt tuning so far.** Early CVSS impact questions under-rated impact. Spelling out how a stated outcome maps to an impact level raised Flash's C agreement from 38% to 52% and removed the bias.
 
@@ -154,14 +154,14 @@ CVSS, CWE, SSVC, the jury and the other judgment questions moved to `questions/e
 
 ### Full-corpus results (2026-10-04)
 
-All 27,489 published CVEs were run through the cascade with 0 errors. Clef Flash needs about 6.4 hours of compute (median 0.84 s per CVE, 14,870 single-runner requests), and Clef 27B about 1.6 hours to re-check 2,487 CVEs (about 2.4 s each). Full tables: `reports/2026-10-04-full-corpus-results.md`.
+All 27,489 published CVEs were run through the cascade with 0 errors. Clef Flash needs about 6.4 hours of compute (median 0.84 s per CVE, 14,870 single-runner requests), and Clef 27B about 1.4 hours to re-read the 2,520 records Flash flagged as stating no impact (2,187 outside the Linux kernel CNA plus 333 Linux records as a control), at a median of 2.0 s for the two impact questions (661 single-runner requests). The re-check run itself asked 2,440 CVEs from a 2,487-CVE list; the rest were already answered from earlier sample runs. Full tables: `reports/2026-10-04-full-corpus-results.md`.
 
 - **16.9% of CVEs never establish a security impact.** **78.7% of those come from the Linux kernel CNA**, where 97.5% of descriptions state no impact. Every other CNA combined: 4.2%.
 - **The cascade was necessary.** Clef 27B overturned **55%** of Flash's non-Linux "no impact" calls (1,198 of 2,187), mostly terse but complete advisories (Apple 79%, GitHub 83%, Chrome 100%). It overturned only 6% of a 333-CVE Linux control sample.
 - **Highest no-impact rates outside Linux:** Tanium 93% ("Tanium addressed an improper access controls vulnerability in Comply."), Qualcomm 71%, Mozilla 58% ("Use-after-free in the DOM: Streams component."), VMware 29%, Drupal 28% ("Vulnerability in Drupal Screenshot. This issue affects Screenshot versions: \*.\*"), Cisco 21%.
 - **Clarity (Flash, 0–4):** corpus average 2.7. 0.7% rate Poor or worse; 70% rate Good or better.
 - **Throughput:** Flash takes 0.84 s per CVE for three questions (p90 0.98 s). The wall clock was longer, and the apparent 1.7 s was an artifact: from 2026-10-03 19:42, two Claude sessions were both chaining full-corpus and re-check chunks over the same queue in the same order. That asked 12,003 Flash and 2,438 Clef 27B CVEs twice, a few seconds apart, with identical answers. `evaluate` keeps one answer per question, so results are unaffected.
-- **The headline uses the plain cascade answer, not a stricter variant.** A briefly committed variant (4d7c9e4, reverted) also required `impact_basis` to be bug-fix-only or similar, giving 15.4%. Against the 150 hand labels, the plain answer agrees on 128 of 129 published records and the stricter one on 124, so 16.9% stays. The report card and the blog draft both use the plain answer.
+- **The headline uses the plain cascade answer, not a stricter variant.** A briefly committed variant (4d7c9e4, reverted) also required `impact_basis` to be bug-fix-only or similar, giving 15.4%. Against the 150 hand labels, the plain answer agrees on 128 of 129 published records and the stricter one on 124, so 16.9% stays. The per-CNA page and the blog draft both use the plain answer.
 - **Hand labels (gold set, all 150 labeled 2026-10-04):** the cascade agrees on 128 of 129 published records (Flash alone 121; all 7 of its misses were too strict, and 27B fixed all 7). Flash clarity is within one level on 124 of 129 (96.1%), exact after rounding 72.1%, r = 0.71, about +0.28 generous.
 
 ### Next
@@ -244,7 +244,7 @@ Rather than asking "is it good?", break it into elements:
 | **4. Core questions** | Q1, Q2, Q4 (per-metric CVSS), Q3 verify | Each beats a naive baseline on the gold set; thresholds chosen |
 | **5. Rules and extended questions** | Q5 model rows, plus Q6–Q12 | SSVC agreement against CISA measured |
 | **6. Model bake-off** | Clef vs Flash vs generative baselines, calibration plots | A recommendation for which model to use per question |
-| **7. Full run and report** | 60-day run, per-CNA report card, dashboard, write-up | Shareable findings |
+| **7. Full run and report** | 60-day run, per-CNA page, write-up | Shareable findings |
 
 Stages 0–3 are the weekend's critical path. Stage 2 produces findings even if Clef disappoints.
 
