@@ -76,9 +76,9 @@ def build(min_cves: int) -> dict:
     clef = {r["cna"]: r for r in rows(con, f"""
         WITH cl AS (SELECT cve_id, score FROM ans WHERE model = '{CORPUS_MODEL}' AND question_id = 'desc_clarity')
         SELECT c.assigner AS cna, count(*) AS answered, avg(cl.score) AS clarity,
-               avg((i.p_true < 0.5)::INT) AS no_impact, avg((i.flash_p < 0.5)::INT) AS flash_no_impact,
+               avg(i.no_impact::INT) AS no_impact, avg((i.flash_p < 0.5)::INT) AS flash_no_impact,
                avg((i.basis = 'bug_fix_only')::INT) AS bug_fix_only
-        FROM impact i JOIN cves c USING (cve_id) JOIN cl USING (cve_id)
+        FROM impact_final i JOIN cves c USING (cve_id) JOIN cl USING (cve_id)
         WHERE c.state = 'PUBLISHED' GROUP BY 1""")}
     for c in cnas:
         r = clef.get(c["cna"])
@@ -97,14 +97,14 @@ def build(min_cves: int) -> dict:
     coverage = rows(con, f"""
         WITH cl AS (SELECT cve_id, score, request_ms FROM ans
                     WHERE model = '{CORPUS_MODEL}' AND question_id = 'desc_clarity')
-        SELECT count(*) AS answered, avg((i.p_true < 0.5)::INT) AS no_impact,
+        SELECT count(*) AS answered, avg(i.no_impact::INT) AS no_impact,
                avg((i.flash_p < 0.5)::INT) AS flash_no_impact, avg(cl.score) AS clarity,
                avg((cl.score < 1.5)::INT) AS poor, avg((cl.score >= 2.5)::INT) AS good, median(cl.request_ms) AS ms
-        FROM impact i JOIN cves c USING (cve_id) JOIN cl USING (cve_id) WHERE c.state = 'PUBLISHED'""")[0]
+        FROM impact_final i JOIN cves c USING (cve_id) JOIN cl USING (cve_id) WHERE c.state = 'PUBLISHED'""")[0]
     # Share of all no-impact descriptions that come from each CNA.
     no_impact_share = rows(con, """
-        SELECT assigner AS cna, count(*) AS n FROM impact JOIN cves USING (cve_id)
-        WHERE state = 'PUBLISHED' AND p_true < 0.5 GROUP BY 1 ORDER BY n DESC LIMIT 5""")
+        SELECT assigner AS cna, count(*) AS n FROM impact_final JOIN cves USING (cve_id)
+        WHERE state = 'PUBLISHED' AND no_impact GROUP BY 1 ORDER BY n DESC LIMIT 5""")
     basis = rows(con, """
         SELECT basis, count(*) AS n FROM impact JOIN cves USING (cve_id)
         WHERE state = 'PUBLISHED' AND basis IS NOT NULL GROUP BY 1 ORDER BY n DESC""")

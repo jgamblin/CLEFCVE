@@ -147,7 +147,7 @@
 
   <section>
     <h2>Two questions a small model answers well</h2>
-    <p class="sub">We asked Cloudflare's Clef decision models, running locally, many questions about each CVE record. Two held up: whether the description says why the bug matters to security, and how clear the description is for a defender. Everything else on this page that grades a CNA comes from rule checks that need no model.</p>
+    <p class="sub">We asked Cloudflare's Clef decision models, running locally, many questions about each CVE record. Two held up: whether the description says why the bug matters to security, and how clear the description is for a defender. A description counts as stating no impact only when both of Clef's answers agree: it says no impact is established, and it classifies the text as only a bug or fix, not security-relevant, or too thin to tell. Everything else on this page that grades a CNA comes from rule checks that need no model.</p>
     <div class="examples" id="examples"></div>
     <div class="panel" style="margin-top:12px"><h3>How descriptions support a security impact</h3>
       <p id="basisNote"></p><div class="stack" id="basisBar"></div><div class="stacklegend" id="basisLegend"></div></div>

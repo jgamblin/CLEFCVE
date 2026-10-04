@@ -53,6 +53,14 @@ def connect(db: Path, answers_db: Path) -> duckdb.DuckDBPyConnection:
                CASE WHEN f.p < 0.5 AND k.p IS NOT NULL THEN coalesce(k.b, f.b) ELSE f.b END AS basis
         FROM f LEFT JOIN k USING (cve_id) WHERE f.p IS NOT NULL
     """)
+    # The headline measure: "no security impact established" only when both answers agree, so a terse record that
+    # names a vulnerability class (e.g. "a SQL injection vulnerability in Asset") isn't counted.
+    con.execute("""
+        CREATE TEMP VIEW impact_final AS
+        SELECT *, (p_true < 0.5 AND basis IN ('bug_fix_only', 'not_security_relevant', 'insufficient_information'))
+                  AS no_impact
+        FROM impact
+    """)
     return con
 
 

@@ -162,6 +162,10 @@ All 27,489 published CVEs were run through the cascade. Clef Flash took about 10
 - **Clarity (Flash, 0–4):** corpus average 2.7. 0.7% rate Poor or worse; 70% rate Good or better.
 - **Throughput:** Flash took about 0.85–1.7 s per CVE for three questions. Ollama serializes requests, and speed varied about 2× between runs for no visible reason.
 
+**Headline measure tightened.** A CVE now counts as "no security impact established" only when both answers agree: the yes/no is no, *and* `impact_basis` is bug_fix_only, not_security_relevant or insufficient_information. This removes terse records that name a vulnerability class (Tanium's "addressed a SQL injection vulnerability in Asset"), where Clef 27B's two answers disagreed.
+- Result: **15.4% (4,220 CVEs); 86.7% from Linux; 2.4% for all other CNAs combined.** Mozilla is 21% (was 58%) and Tanium 0% (was 93%).
+- The report card and the blog draft both use this measure. The `impact_final` view in `evaluate.py` defines it.
+
 ### Next
 1. Finish hand-labeling Q1 and clarity in the labeling app.
 2. Full 60-day runs: Flash for the quality pack (Q1 and clarity, about 24 h); Clef 27B for CVSS and CWE only on CVEs that lint or Flash flags.
