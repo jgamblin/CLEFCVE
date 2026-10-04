@@ -167,7 +167,7 @@ All 27,489 published CVEs were run through the cascade with 0 errors. Clef Flash
 ### Next
 1. Finish hand-labeling Q1 and clarity in the labeling app.
 2. Full 60-day runs: Flash for the quality pack (Q1 and clarity, about 24 h); Clef 27B for CVSS and CWE only on CVEs that lint or Flash flags.
-3. Per-CNA page (done: `reports/cna_report_card.html`). No letter grades or composite scores, by design: each rule check and each Clef answer is its own column.
+3. Per-CNA page (done: `reports/cna_records.html`, built by `clefcve.cna_page`). No letter grades or composite scores, by design: each rule check and each Clef answer is its own column.
 
 ## Architecture (lightweight)
 

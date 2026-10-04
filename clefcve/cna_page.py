@@ -1,6 +1,6 @@
-"""Build the per-CNA page (reports/cna_report_card.html) from the corpus, lint, Clef answers and jury.
+"""Build the per-CNA page (reports/cna_records.html) from the corpus, lint, Clef answers and jury.
 
-Usage: python -m clefcve.report_card [--min-cves 25]
+Usage: python -m clefcve.cna_page [--min-cves 25]
 
 Rule-check columns come from deterministic checks over the full 60-day corpus, so every CNA is measured on all
 its records. There is no composite grade or score: each check stands on its own. The two Clef columns (security impact stated, clarity) come from Clef Flash over the corpus, answered in
@@ -16,8 +16,8 @@ from . import config
 from .evaluate import INVALID_REASON_SQL
 from .evaluate import CORPUS_MODEL, connect, load_jury, severity_section
 
-TEMPLATE = Path(__file__).with_name("report_card.html")
-OUT = config.PROJECT_ROOT / "reports" / "cna_report_card.html"
+TEMPLATE = Path(__file__).with_name("cna_page.html")
+OUT = config.PROJECT_ROOT / "reports" / "cna_records.html"
 
 # Rule checks shown per CNA. Each is the share of a CNA's records that pass; "na" is excluded.
 RULE_CHECKS = {
@@ -25,7 +25,6 @@ RULE_CHECKS = {
     "affected_product": "Names an affected product (5.1.3, MUST)",
     "affected_status": "Marks a product affected/unknown (5.1.4, MUST)",
     "cwe_structured": "Uses a structured CWE ID (5.1.7, SHOULD)",
-    "cwe_mapping_allowed": "CWE is not Prohibited/Discouraged (CWE guidance)",
     "fixed_version": "Identifies fixed versions (5.1.5, SHOULD)",
     "desc_unique": "Description not shared with another CVE (5.1.1, SHOULD)",
     "cvss_score_matches": "CVSS score matches its vector",
@@ -89,7 +88,8 @@ def build(min_cves: int) -> dict:
     lint_summary = rows(con, """
         SELECT check_id, rule, level, count(*) FILTER (status IN ('fail', 'warn')) AS flagged,
                count(*) FILTER (status IN ('pass', 'fail', 'warn')) AS evaluated
-        FROM lint GROUP BY ALL HAVING flagged > 0 ORDER BY flagged DESC""")
+        FROM lint WHERE level <> 'format' AND check_id <> 'cwe_mapping_allowed'  -- CNA-rule checks only
+        GROUP BY ALL HAVING flagged > 0 ORDER BY flagged DESC""")
 
     coverage = rows(con, f"""
         WITH cl AS (SELECT cve_id, score, request_ms FROM ans

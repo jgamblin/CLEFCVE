@@ -232,7 +232,6 @@ const COLS = [
   { key: "cna", label: "CNA", get: (c) => c.cna, fmt: (c) => esc(c.cna), cls: "cna" },
   { key: "cves", label: "CVEs", get: (c) => c.cves, fmt: (c) => fmt(c.cves) },
   { key: "must", label: "MUST fails", get: (c) => c.must_fail, fmt: (c) => `<span class="${c.must_fail > .5 ? "bad" : c.must_fail > .05 ? "warn" : ""}">${pct(c.must_fail)}</span>` },
-  { key: "cwe", label: "CWE ID", get: (c) => c.checks.cwe_structured, fmt: (c) => barPct(c.checks.cwe_structured) },
   { key: "fix", label: "Fixed ver.", get: (c) => c.checks.fixed_version, fmt: (c) => barPct(c.checks.fixed_version) },
   { key: "uniq", label: "Unique desc.", get: (c) => c.checks.desc_unique, fmt: (c) => barPct(c.checks.desc_unique) },
   { key: "noimpact", label: "No impact", group: true, get: (c) => c.clef?.no_impact, fmt: (c) => c.clef ? barPct(c.clef.no_impact, true) : dash },
@@ -336,5 +335,5 @@ $("methodBody").innerHTML = `
   <p>Most-flagged checks across the corpus:</p><ul>${lintTop}</ul>
   <p><b>Clef.</b> Cloudflare's Clef Flash (9B) answered three typed questions from each record's title and description through Ollama's decision endpoint: does the description establish a security impact (yes/no), how does it support one (five options), and how clear is it (0-4). It never sees the CVSS, CWE, or affected-product data. Clef 27B re-checked the security-impact answer wherever Flash said no impact was stated (outside the Linux kernel CNA, plus a random 300 Linux CVEs), and its answer is used where it exists.</p>
   <p><b>Caveats.</b> Clef's answers are judgments about the text, checked against a larger model and 150 hand labels, not ground truth. The rule checks measure record completeness against the CNA rules, not the quality of anyone's security work.</p>`;
-$("footer").textContent = `Generated ${D.generated} by clefcve.report_card.`;
+$("footer").textContent = `Generated ${D.generated} by clefcve.cna_page.`;
 </script>

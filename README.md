@@ -26,7 +26,7 @@ git -C ~/Data/cvelistV5 pull
 .venv/bin/python -m clefcve.ingest              # last 60 days -> data/clefcve.duckdb (~10 s)
 .venv/bin/python -m clefcve.lint                # rule checks (~3 s)
 ./scripts/full_corpus.sh                        # Clef Flash on every description; rerun until 0 requests remain
-.venv/bin/python -m clefcve.report_card         # -> reports/cna_report_card.html (per-CNA page)
+.venv/bin/python -m clefcve.cna_page            # -> reports/cna_records.html (per-CNA page)
 .venv/bin/python -m clefcve.evaluate            # -> data/reports/results.md  (add --experimental for the shelved work)
 ```
 Answers are cached in `data/answers.duckdb` by question wording, so reruns only ask what changed.
