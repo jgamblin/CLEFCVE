@@ -1,9 +1,9 @@
-"""Build the per-CNA report card page (reports/cna_report_card.html) from the corpus, lint, Clef answers and jury.
+"""Build the per-CNA page (reports/cna_report_card.html) from the corpus, lint, Clef answers and jury.
 
 Usage: python -m clefcve.report_card [--min-cves 25]
 
-Grades come only from deterministic checks over the full 60-day corpus, so every CNA is graded on all its
-records. The two Clef columns (security impact stated, clarity) come from Clef Flash over the corpus, answered in
+Rule-check columns come from deterministic checks over the full 60-day corpus, so every CNA is measured on all
+its records. There is no composite grade or score: each check stands on its own. The two Clef columns (security impact stated, clarity) come from Clef Flash over the corpus, answered in
 random order; Clef 27B on a random sample is the spot check. The shelved CVSS/CWE experiments get a short summary.
 """
 
@@ -19,8 +19,8 @@ from .evaluate import CORPUS_MODEL, connect, load_jury, severity_section
 TEMPLATE = Path(__file__).with_name("report_card.html")
 OUT = config.PROJECT_ROOT / "reports" / "cna_report_card.html"
 
-# Checks that make up the completeness score. Each is the share of a CNA's records that pass; "na" is excluded.
-GRADED_CHECKS = {
+# Rule checks shown per CNA. Each is the share of a CNA's records that pass; "na" is excluded.
+RULE_CHECKS = {
     "vuln_type": "States the vulnerability type (5.1.7, MUST)",
     "affected_product": "Names an affected product (5.1.3, MUST)",
     "affected_status": "Marks a product affected/unknown (5.1.4, MUST)",
@@ -30,7 +30,6 @@ GRADED_CHECKS = {
     "desc_unique": "Description not shared with another CVE (5.1.1, SHOULD)",
     "cvss_score_matches": "CVSS score matches its vector",
 }
-GRADES = [(95, "A"), (88, "B"), (80, "C"), (70, "D"), (0, "F")]
 MIN_ANSWERED = 10  # Clef columns need at least this many answered CVEs for a CNA
 
 
@@ -43,7 +42,7 @@ def rows(con, sql, params=None):
 def build(min_cves: int) -> dict:
     con = connect(config.DB_PATH, config.ANSWERS_DB_PATH)
     run = rows(con, "SELECT repo_sha, repo_head_time, window_days, dev_slice_days FROM ingest_run")[0]
-    checks_sql = ", ".join(f"'{c}'" for c in GRADED_CHECKS)
+    checks_sql = ", ".join(f"'{c}'" for c in RULE_CHECKS)
 
     cnas = rows(con, f"""
         WITH n AS (SELECT assigner, count(*) AS cves FROM cves WHERE state = 'PUBLISHED' GROUP BY 1 HAVING count(*) >= ?),
@@ -68,8 +67,6 @@ def build(min_cves: int) -> dict:
     """, [min_cves])
     for c in cnas:
         c["checks"] = {k: v for k, v in c["checks"].items() if v is not None}
-        c["score"] = round(100 * sum(c["checks"].values()) / len(c["checks"]), 1)
-        c["grade"] = next(g for t, g in GRADES if c["score"] >= t)
 
     # Clef columns from the corpus run, where a CNA has enough answered CVEs.
     # Impact columns use the cascade (Flash, re-checked by 27B); clarity is Flash everywhere, so CNAs compare evenly.
@@ -178,7 +175,7 @@ def build(min_cves: int) -> dict:
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "repo_sha": run["repo_sha"][:12], "repo_head": run["repo_head_time"].strftime("%Y-%m-%d"),
         "window_days": run["window_days"], "corpus": corpus, "min_cves": min_cves, "min_answered": MIN_ANSWERED,
-        "graded_checks": GRADED_CHECKS, "cnas": cnas, "lint": lint_summary,
+        "rule_checks": RULE_CHECKS, "cnas": cnas, "lint": lint_summary,
         "coverage": coverage | {"total": corpus_total}, "no_impact_share": no_impact_share, "basis": basis,
         "spot": spot, "lowest": lowest, "examples": examples, "cascade": cascade,
         "shelved": {"bands": bands, "jury": jury, "cwe_not_exact": cwe["not_exact"], "cwe_examples": cwe_examples,

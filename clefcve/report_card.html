@@ -1,10 +1,10 @@
-<title>CVE CNA Report Card</title>
+<title>CVE Records by CNA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-  /* Layout: one 1180px column. Summary strip, then the graded table (the page's main object), then Clef's
-     findings as paired panels, then evidence lists and method. Grades read like stamped report-card marks. */
+  /* Layout: one 1180px column. Summary strip, then the per-CNA table (the page's main object), then Clef's
+     findings as paired panels, then evidence lists and method. No composite grades: each measure stands alone. */
   :root {
     --bg: #f3f5f8; --surface: #ffffff; --sunk: #e9edf2; --ink: #141a22; --muted: #586474; --line: #d6dce4;
     --accent: #1f5bd6; --accent-soft: #e2eafb;
@@ -54,15 +54,6 @@
   .stat { background: var(--surface); padding: 14px 16px; }
   .stat .v { font: 800 30px/1.1 var(--display); font-stretch: 80%; font-variant-numeric: tabular-nums; }
   .stat .k { color: var(--muted); font-size: 13px; margin-top: 2px; }
-  .gradebar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 10px; }
-  .gradebar span { display: block; }
-
-  /* Grade stamp */
-  .grade { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
-           font: 800 16px var(--display); font-stretch: 90%; border: 2px solid currentColor; transform: rotate(-6deg); }
-  .grade.A { color: var(--g-a); background: var(--g-a-soft); } .grade.B { color: var(--g-b); background: var(--g-b-soft); }
-  .grade.C { color: var(--g-c); background: var(--g-c-soft); } .grade.D { color: var(--g-d); background: var(--g-d-soft); }
-  .grade.F { color: var(--g-f); background: var(--g-f-soft); }
 
   /* Table */
   .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
@@ -139,7 +130,7 @@
 <div class="wrap">
   <header>
     <div class="eyebrow" id="eyebrow"></div>
-    <h1>CVE CNA Report Card</h1>
+    <h1>CVE Records by CNA</h1>
     <p class="lede" id="lede"></p>
     <div class="stats" id="stats"></div>
     <div class="coverage" id="coverage"></div>
@@ -147,18 +138,17 @@
 
   <section>
     <h2>Two questions a small model answers well</h2>
-    <p class="sub">We asked Cloudflare's Clef decision models, running locally, many questions about each CVE record. Two held up: whether the description says why the bug matters to security, and how clear the description is for a defender. Everything else on this page that grades a CNA comes from rule checks that need no model.</p>
+    <p class="sub">We asked Cloudflare's Clef decision models, running locally, many questions about each CVE record. Two held up: whether the description says why the bug matters to security, and how clear the description is for a defender. Everything else on this page comes from rule checks that need no model.</p>
     <div class="examples" id="examples"></div>
     <div class="panel" style="margin-top:12px"><h3>How descriptions support a security impact</h3>
       <p id="basisNote"></p><div class="stack" id="basisBar"></div><div class="stacklegend" id="basisLegend"></div></div>
   </section>
 
-  <section id="grades">
-    <h2>Grades by CNA</h2>
-    <p class="sub" id="gradesSub"></p>
+  <section id="cnas">
+    <h2>Rule checks and Clef's read, by CNA</h2>
+    <p class="sub" id="tableSub"></p>
     <div class="tools">
       <input id="search" type="search" placeholder="Find a CNA" aria-label="Find a CNA">
-      <div class="chips" id="gradeFilter" role="group" aria-label="Filter by grade"></div>
     </div>
     <div class="tablebox"><table id="table"></table></div>
   </section>
@@ -188,7 +178,7 @@
 
   <section>
     <h2>How this was made</h2>
-    <details class="method"><summary>Data, grading, models, and caveats</summary><div id="methodBody"></div></details>
+    <details class="method"><summary>Data, rule checks, models, and caveats</summary><div id="methodBody"></div></details>
   </section>
   <footer id="footer"></footer>
 </div>
@@ -200,20 +190,16 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const pct = (v, d = 0) => v == null ? "–" : (100 * v).toFixed(d) + "%";
 const fmt = (n) => Number(n).toLocaleString("en-US");
 const cveLink = (id) => `<a class="mono" href="https://www.cve.org/CVERecord?id=${esc(id)}" target="_blank" rel="noopener noreferrer">${esc(id)}</a>`;
-const GRADE_VAR = { A: "--g-a", B: "--g-b", C: "--g-c", D: "--g-d", F: "--g-f" };
 const short = (s, n = 190) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 const COV = D.coverage, partial = COV.answered < COV.total * 0.98;
 
 // ---- Header ----
-const counts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
-D.cnas.forEach((c) => counts[c.grade]++);
 const linuxShare = (() => { const l = D.no_impact_share.find((r) => r.cna === "Linux"); const all = COV.no_impact * COV.answered; return l && all ? l.n / all : null; })();
 $("eyebrow").textContent = `CVE List V5 · ${D.window_days}-day window to ${D.repo_head}`;
 $("lede").innerHTML = `How well CVE Numbering Authorities write their records: <b>${fmt(D.corpus.cves)}</b> CVEs published in the last ${D.window_days} days, checked against the CVE Program's rules and read by <b>Clef</b>, a small decision model running on a laptop.`;
 $("stats").innerHTML = [
   [fmt(D.corpus.cves), `CVEs published by ${D.corpus.cnas} CNAs`],
-  [D.cnas.length, `CNAs graded (≥ ${D.min_cves} CVEs)<div class="gradebar">${Object.entries(counts).map(([g, n]) =>
-    `<span title="${g}: ${n}" style="flex:${n};background:var(${GRADE_VAR[g]})"></span>`).join("")}</div>`],
+  [D.cnas.length, `CNAs with at least ${D.min_cves} CVEs in the window`],
   [pct(COV.no_impact), `of descriptions never say what an attacker could do`],
   [pct(linuxShare), `of those come from the Linux kernel CNA`],
 ].map(([v, k]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
@@ -244,8 +230,6 @@ function barPct(v, invert = false) {
 const dash = `<span class="dim">–</span>`;
 const COLS = [
   { key: "cna", label: "CNA", get: (c) => c.cna, fmt: (c) => esc(c.cna), cls: "cna" },
-  { key: "grade", label: "Grade", get: (c) => c.score, fmt: (c) => `<span class="grade ${c.grade}" title="Score ${c.score}">${c.grade}</span>` },
-  { key: "score", label: "Score", get: (c) => c.score, fmt: (c) => c.score.toFixed(1) },
   { key: "cves", label: "CVEs", get: (c) => c.cves, fmt: (c) => fmt(c.cves) },
   { key: "must", label: "MUST fails", get: (c) => c.must_fail, fmt: (c) => `<span class="${c.must_fail > .5 ? "bad" : c.must_fail > .05 ? "warn" : ""}">${pct(c.must_fail)}</span>` },
   { key: "cwe", label: "CWE ID", get: (c) => c.checks.cwe_structured, fmt: (c) => barPct(c.checks.cwe_structured) },
@@ -255,19 +239,11 @@ const COLS = [
   { key: "clarity", label: "Clarity", group: true, get: (c) => c.clef?.clarity, fmt: (c) => c.clef ? c.clef.clarity.toFixed(1) : dash },
   { key: "answered", label: "Read", group: true, get: (c) => c.clef?.answered, fmt: (c) => c.clef ? `<span class="dim">${fmt(c.clef.answered)}</span>` : dash },
 ];
-let sortKey = "cves", sortDir = -1, filterGrade = null, query = "", open = new Set();
-$("gradesSub").innerHTML = `Grades use only rule checks against CNA Operational Rules 4.1.0, run on every record a CNA published. The score is the average pass rate of ${Object.keys(D.graded_checks).length} checks; A ≥ 95, B ≥ 88, C ≥ 80, D ≥ 70. The Clef columns appear once Clef has read at least ${D.min_answered} of a CNA's descriptions. Click a row for the check breakdown.`;
-$("gradeFilter").innerHTML = ["All", "A", "B", "C", "D", "F"].map((g) =>
-  `<button class="chip" data-g="${g}" aria-pressed="${g === "All"}">${g === "All" ? "All grades" : `${g} · ${counts[g]}`}</button>`).join("");
-$("gradeFilter").addEventListener("click", (e) => {
-  const b = e.target.closest("button"); if (!b) return;
-  filterGrade = b.dataset.g === "All" ? null : b.dataset.g;
-  [...$("gradeFilter").children].forEach((x) => x.setAttribute("aria-pressed", x === b));
-  renderTable();
-});
+let sortKey = "cves", sortDir = -1, query = "", open = new Set();
+$("tableSub").innerHTML = `The ${D.cnas.length} CNAs that published at least ${D.min_cves} CVEs in the window. The rule-check columns come from checks against CNA Operational Rules 4.1.0, run on every record a CNA published; each is the share of records that pass, and there is no combined score. The Clef columns appear once Clef has read at least ${D.min_answered} of a CNA's descriptions. Click a column to sort, or a row for the full check breakdown.`;
 $("search").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); renderTable(); });
 function detailRow(c) {
-  const checks = Object.entries(D.graded_checks).map(([k, label]) => {
+  const checks = Object.entries(D.rule_checks).map(([k, label]) => {
     const v = c.checks[k];
     const color = v == null ? "--line" : v >= .95 ? "--g-a" : v >= .8 ? "--g-b" : v >= .6 ? "--g-c" : "--g-f";
     return `<div class="crow"><span>${esc(label)}</span><span class="num" style="text-align:right">${pct(v)}</span>
@@ -286,7 +262,7 @@ function detailRow(c) {
 }
 function renderTable() {
   const col = COLS.find((c) => c.key === sortKey);
-  const list = D.cnas.filter((c) => (!filterGrade || c.grade === filterGrade) && (!query || c.cna.toLowerCase().includes(query)))
+  const list = D.cnas.filter((c) => !query || c.cna.toLowerCase().includes(query))
     .sort((a, b) => {
       const x = col.get(a), y = col.get(b);
       if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
@@ -355,10 +331,10 @@ $("shelved").innerHTML = [
 const lintTop = D.lint.slice(0, 8).map((l) => `<li><span class="mono">${esc(l.check_id)}</span> (${esc(l.rule)}, ${esc(l.level)}): ${fmt(l.flagged)} of ${fmt(l.evaluated)} records flagged</li>`).join("");
 $("methodBody").innerHTML = `
   <p><b>Data.</b> Every CVE record published in the ${D.window_days} days to ${D.repo_head} in the CVE List V5 repository (commit <span class="mono">${esc(D.repo_sha)}</span>).</p>
-  <p><b>Grades.</b> Rule checks only, over every record a CNA published. Score = average pass rate of:</p>
-  <ul>${Object.values(D.graded_checks).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>
+  <p><b>Rule checks.</b> Deterministic checks over every record a CNA published, each reported as the share of records that pass. The table shows:</p>
+  <ul>${Object.values(D.rule_checks).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>
   <p>Most-flagged checks across the corpus:</p><ul>${lintTop}</ul>
   <p><b>Clef.</b> Cloudflare's Clef Flash (9B) answered three typed questions from each record's title and description through Ollama's decision endpoint: does the description establish a security impact (yes/no), how does it support one (five options), and how clear is it (0-4). It never sees the CVSS, CWE, or affected-product data. Clef 27B re-checked the security-impact answer wherever Flash said no impact was stated (outside the Linux kernel CNA, plus a random 300 Linux CVEs), and its answer is used where it exists.</p>
-  <p><b>Caveats.</b> Clef's answers are judgments about the text, checked against a larger model and a small set of hand labels, not ground truth. A CNA's grade measures record completeness against the rules, not the quality of its security work.</p>`;
+  <p><b>Caveats.</b> Clef's answers are judgments about the text, checked against a larger model and 150 hand labels, not ground truth. The rule checks measure record completeness against the CNA rules, not the quality of anyone's security work.</p>`;
 $("footer").textContent = `Generated ${D.generated} by clefcve.report_card.`;
 </script>

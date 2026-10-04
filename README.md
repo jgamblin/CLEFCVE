@@ -1,8 +1,8 @@
 # CLEFCVE
-Grades CVE Numbering Authorities on how well they write CVE records, using two things:
+Measures how CVE Numbering Authorities write their CVE records, using two things:
 
 1. **Rule checks** (no model): 23 deterministic checks against the CVE Program's CNA Operational Rules 4.1.0,
-   run on every record. These produce the grades.
+   run on every record, each reported per CNA as the share of records that pass. There is no composite grade or score.
 2. **Two questions for Cloudflare's Clef decision model**, run locally in Ollama on each description:
    - *Does the description establish a security impact?* (and how: stated outright, implied by a vuln class, or only describes a bug fix)
    - *How clear is it for a defender?* (0 Unusable to 4 Excellent)
@@ -26,7 +26,7 @@ git -C ~/Data/cvelistV5 pull
 .venv/bin/python -m clefcve.ingest              # last 60 days -> data/clefcve.duckdb (~10 s)
 .venv/bin/python -m clefcve.lint                # rule checks (~3 s)
 ./scripts/full_corpus.sh                        # Clef Flash on every description; rerun until 0 requests remain
-.venv/bin/python -m clefcve.report_card         # -> reports/cna_report_card.html
+.venv/bin/python -m clefcve.report_card         # -> reports/cna_report_card.html (per-CNA page)
 .venv/bin/python -m clefcve.evaluate            # -> data/reports/results.md  (add --experimental for the shelved work)
 ```
 Answers are cached in `data/answers.duckdb` by question wording, so reruns only ask what changed.

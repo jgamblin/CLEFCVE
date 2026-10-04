@@ -142,7 +142,7 @@ Full tables: `reports/2026-10-03-first-results.md`. Regenerate with `python -m c
 ### Reshaped to two questions (2026-10-03)
 
 The tool now does three things:
-- **Rule checks:** the grades.
+- **Rule checks:** one column per check, per CNA.
 - **"Does the description establish a security impact?"** (plus `impact_basis`).
 - **"How clear is the description?"**
 
@@ -167,7 +167,7 @@ All 27,489 published CVEs were run through the cascade with 0 errors. Clef Flash
 ### Next
 1. Finish hand-labeling Q1 and clarity in the labeling app.
 2. Full 60-day runs: Flash for the quality pack (Q1 and clarity, about 24 h); Clef 27B for CVSS and CWE only on CVEs that lint or Flash flags.
-3. Per-CNA report card artifact.
+3. Per-CNA page (done: `reports/cna_report_card.html`). No letter grades or composite scores, by design: each rule check and each Clef answer is its own column.
 
 ## Architecture (lightweight)
 
