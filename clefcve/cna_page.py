@@ -4,7 +4,7 @@ Usage: python -m clefcve.cna_page [--min-cves 25]
 
 Rule-check columns come from deterministic checks over the full 60-day corpus, so every CNA is measured on all
 its records. There is no composite grade or score: each check stands on its own. The two Clef columns (security impact stated, clarity) come from Clef Flash over the corpus, answered in
-random order; Clef 27B on a random sample is the spot check. The shelved CVSS/CWE experiments get a short summary.
+random order; Clef 27B on a random sample is the spot check.
 """
 
 import argparse
@@ -13,8 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
-from .evaluate import INVALID_REASON_SQL
-from .evaluate import CORPUS_MODEL, connect, load_jury, severity_section
+from .evaluate import CORPUS_MODEL, connect
 
 TEMPLATE = Path(__file__).with_name("cna_page.html")
 OUT = config.PROJECT_ROOT / "reports" / "cna_records.html"
@@ -120,10 +119,6 @@ def build(min_cves: int) -> dict:
         FROM ans f JOIN ans c USING (cve_id, item, question_id)
         WHERE f.model = 'clef-flash' AND c.model = 'clef' AND f.question_id IN ('security_impact_stated', 'desc_clarity')
         GROUP BY 1""")
-    rejected = rows(con, f"""
-        SELECT avg(p_true) FILTER (state = 'PUBLISHED') AS published,
-               avg(p_true) FILTER (state = 'REJECTED' AND {INVALID_REASON_SQL}) AS rejected_invalid
-        FROM ans JOIN cves USING (cve_id) WHERE model = 'clef' AND question_id = 'is_vuln'""")[0]
     # One clear, impact-stating description and one fix log with no stated impact, as the page's examples.
     examples = rows(con, f"""
         WITH a AS (
@@ -140,35 +135,6 @@ def build(min_cves: int) -> dict:
         WHERE model = '{CORPUS_MODEL}' AND state = 'PUBLISHED' AND question_id = 'desc_clarity'
           AND assigner <> 'Linux' ORDER BY score LIMIT 3""")
 
-    # Shelved experiments: headline numbers only.
-    severity_section(con)  # builds temp table `sev`
-    bands = rows(con, """
-        SELECT model, count(*) AS n, avg((upper(clef_sev) = upper(cna_sev))::INT) AS same_band
-        FROM sev WHERE version = '3.1' GROUP BY model""")
-    jury_n = load_jury(con)
-    jury = {"n": jury_n}
-    if jury_n:
-        from .evaluate import jury_section
-        jury_section(con)  # builds temp tables jury_cmp, jury_votes
-        m = rows(con, """
-            SELECT count(*) FILTER (clef >= cna) AS clef_tied_or_ahead, count(*) AS metrics, avg(clef) AS clef_avg
-            FROM (SELECT field, avg((clef = jury)::INT) AS clef, avg((cna = jury)::INT) AS cna
-                  FROM jury_cmp WHERE clef IS NOT NULL AND cna IS NOT NULL GROUP BY field)""")[0]
-        loo = rows(con, """
-            WITH loo AS (
-                SELECT v.juror, v.value, (SELECT mode(o.value) FROM jury_votes o WHERE o.cve_id = v.cve_id
-                                          AND o.field = v.field AND o.juror <> v.juror) AS others
-                FROM jury_votes v WHERE v.field IN ('AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'))
-            SELECT min(a) AS lo, max(a) AS hi FROM (SELECT juror, avg((value = others)::INT) AS a FROM loo GROUP BY 1)""")[0]
-        jurors = [r["juror"].split(":")[0] for r in rows(con, "SELECT DISTINCT juror FROM jury_votes ORDER BY 1")]
-        jury |= m | {"juror_lo": loo["lo"], "juror_hi": loo["hi"], "jurors": jurors}
-    cwe = rows(con, """
-        SELECT avg((choice <> 'exact')::INT) AS not_exact FROM ans WHERE question_id = 'cwe_fit' AND model = 'clef'""")[0]
-    cwe_examples = rows(con, """
-        SELECT x.cve_id, cv.assigner AS cna, x.item AS cwe, k.name, cv.description
-        FROM ans x JOIN cves cv USING (cve_id) LEFT JOIN cwe_catalog k ON k.cwe_id = x.item
-        WHERE x.question_id = 'cwe_acceptable' AND x.model = 'clef' AND x.p_true < 0.5
-          AND x.cve_id IN ('CVE-2026-69421', 'CVE-2026-49314')""")
     corpus_total = corpus["cves"]
 
     return {
@@ -178,8 +144,6 @@ def build(min_cves: int) -> dict:
         "rule_checks": RULE_CHECKS, "cnas": cnas, "lint": lint_summary,
         "coverage": coverage | {"total": corpus_total}, "no_impact_share": no_impact_share, "basis": basis,
         "spot": spot, "lowest": lowest, "examples": examples, "cascade": cascade,
-        "shelved": {"bands": bands, "jury": jury, "cwe_not_exact": cwe["not_exact"], "cwe_examples": cwe_examples,
-                    "is_vuln": rejected},
     }
 
 
