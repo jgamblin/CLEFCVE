@@ -152,6 +152,16 @@ The commit-message flag was dropped from the core: Flash flagged ordinary Apple 
 
 CVSS, CWE, SSVC, the jury and the other judgment questions moved to `questions/experimental/`. Run `evaluate --experimental` for them.
 
+### Full-corpus results (2026-10-04)
+
+All 27,489 published CVEs were run through the cascade. Clef Flash took about 10 hours in 6 chunks with 0 errors. Clef 27B re-checked 2,487 CVEs in about 3 hours. Full tables: `reports/2026-10-04-full-corpus-results.md`.
+
+- **16.9% of CVEs never establish a security impact.** **78.7% of those come from the Linux kernel CNA**, where 97.5% of descriptions state no impact. Every other CNA combined: 4.2%.
+- **The cascade was necessary.** Clef 27B overturned **55%** of Flash's non-Linux "no impact" calls (1,198 of 2,187), mostly terse but complete advisories (Apple 79%, GitHub 83%, Chrome 100%). It overturned only 6% of a 333-CVE Linux control sample.
+- **Highest no-impact rates outside Linux:** Tanium 93% ("Tanium addressed an improper access controls vulnerability in Comply."), Qualcomm 71%, Mozilla 58% ("Use-after-free in the DOM: Streams component."), VMware 29%, Drupal 28% ("Vulnerability in Drupal Screenshot. This issue affects Screenshot versions: \*.\*"), Cisco 21%.
+- **Clarity (Flash, 0–4):** corpus average 2.7. 0.7% rate Poor or worse; 70% rate Good or better.
+- **Throughput:** Flash took about 0.85–1.7 s per CVE for three questions. Ollama serializes requests, and speed varied about 2× between runs for no visible reason.
+
 ### Next
 1. Finish hand-labeling Q1 and clarity in the labeling app.
 2. Full 60-day runs: Flash for the quality pack (Q1 and clarity, about 24 h); Clef 27B for CVSS and CWE only on CVEs that lint or Flash flags.
